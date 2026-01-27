@@ -22,7 +22,7 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
 }
 
 /* Mobile-first responsive typography */
@@ -39,6 +39,14 @@ body,
   body,
   #root {
     font-size: 14px;
+  }
+}
+
+@media (max-width: 375px) {
+  html,
+  body,
+  #root {
+    font-size: 13px;
   }
 }
 
