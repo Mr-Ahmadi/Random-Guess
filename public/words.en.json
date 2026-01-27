@@ -1,0 +1,18 @@
+{
+  "categories": {
+    "general": [
+      "apple", "banana", "car", "dog", "elephant", "flower", "guitar", "house",
+      "ice", "jungle", "kite", "lamp", "moon", "notebook", "orange", "piano",
+      "queen", "river", "sun", "tree", "umbrella", "violin", "water", "xylophone",
+      "yellow", "zebra", "anchor", "bridge", "castle", "diamond", "eagle", "forest",
+      "garden", "helmet", "island", "jewelry", "kitchen", "library", "mountain",
+      "nature", "ocean", "palace", "quiet", "rainbow", "silver", "thunder", "universe",
+      "victory", "whale", "yacht", "zoo", "ability", "balance", "captain", "desert",
+      "energy", "famous", "gentle", "harvest", "imagine", "journey", "knowledge", "legend",
+      "miracle", "neutral", "ocean", "promise", "quality", "rescue", "shadow", "thought",
+      "ultimate", "valley", "wisdom", "expert", "freedom", "ghost", "honest", "instant",
+      "jubilee", "kingdom", "language", "machine", "nation", "official", "practice", "quality",
+      "return", "system", "teacher", "universe", "valuable", "weather", "young", "academy"
+    ]
+  }
+}
