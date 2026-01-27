@@ -105,22 +105,19 @@ The app will open at `http://localhost:5173/`
 ## How to Play
 
 ### Setup Phase (Lobby)
-1. Select the number of teams (2-6)
-2. Enter each team's name (or use defaults)
-3. Set the timer duration in seconds (default: 60 seconds)
-4. Click "Start Game"
+1. Set the timer duration in seconds (default: 60 seconds)
+2. Click "Start Game"
 
 ### Gameplay Phase (In-Game)
-1. The first team name is displayed at the top
-2. A word appears in the large text box
-3. **Using External Communication** (Google Meet, Zoom, etc.):
+1. A word appears in the large text box
+2. **Using External Communication** (Google Meet, Zoom, etc.):
    - Players on the active team discuss the word externally
    - Other teams stay silent and cannot see/hear the discussion
-4. When the team guesses the word correctly:
+3. When the team guesses the word correctly:
    - Click "✓ Got It!" to score 1 point and display the next word
-5. If the team wants to skip without scoring:
+4. If the team wants to skip without scoring:
    - Click "⊘ Skip" to move to the next word (0 points awarded)
-6. **The timer automatically switches teams** when one team's time ends
+5. **The timer automatically switches teams** when one team's time ends
    - All teams share the same timer pool
    - First team to run out of time ends the game
 
@@ -255,50 +252,3 @@ Found a bug? Want to add features? Just modify the code:
 - Modify component styles (`.css` files)
 - Extend game logic in `src/state/gameReducer.ts`
 - Add new game states or features as needed
-
-## Credits
-
-Inspired by "Dor" and team-based word guessing games. Built for fun and social gaming with friends and family.
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
