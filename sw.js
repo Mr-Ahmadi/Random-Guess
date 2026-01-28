@@ -1,4 +1,4 @@
-const CACHE_NAME = 'word-guess-v3';
+const CACHE_NAME = 'word-guess-v4';
 const URLS_TO_CACHE = [
   '/Random-Guess/',
   '/Random-Guess/index.html',
@@ -9,7 +9,10 @@ const URLS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE);
+      return cache.addAll(URLS_TO_CACHE).catch(() => {
+        // Continue even if some URLs fail to cache
+        console.log('Some URLs failed to cache during install');
+      });
     })
   );
   self.skipWaiting();
@@ -43,7 +46,7 @@ self.addEventListener('fetch', (event) => {
   const isAssetRequest = url.pathname.includes('/assets/');
 
   if (isAssetRequest) {
-    // For versioned assets (with hashes), use cache-first strategy
+    // For versioned assets (with hashes), use cache-first strategy with network fallback
     event.respondWith(
       caches.match(event.request)
         .then((cachedResponse) => {
@@ -51,7 +54,8 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
           return fetch(event.request).then((response) => {
-            if (!response || response.status !== 200 || response.type === 'error') {
+            // Only cache successful responses
+            if (!response || response.status !== 200) {
               return response;
             }
             const responseToCache = response.clone();
@@ -59,10 +63,14 @@ self.addEventListener('fetch', (event) => {
               cache.put(event.request, responseToCache);
             });
             return response;
+          }).catch((error) => {
+            console.error('Asset fetch failed:', error);
+            // Return a generic fallback for offline
+            return caches.match('/Random-Guess/index.html');
           });
         })
         .catch(() => {
-          // If both cache and network fail, return a generic offline page
+          // If cache fails, return a generic offline page
           return caches.match('/Random-Guess/index.html');
         })
     );
@@ -71,7 +79,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          if (!response || response.status !== 200 || response.type === 'error') {
+          if (!response || response.status !== 200) {
             // On bad response, try cache
             return caches.match(event.request).then((cachedResponse) => {
               return cachedResponse || caches.match('/Random-Guess/index.html');
