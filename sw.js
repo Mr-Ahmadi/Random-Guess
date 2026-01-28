@@ -38,6 +38,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+  const isAsset = url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff2|woff|ttf)$/i);
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
@@ -45,23 +48,23 @@ self.addEventListener('fetch', (event) => {
       }
 
       return fetch(event.request).then((response) => {
-        // Don't cache non-successful responses
+        // Don't cache non-successful responses or error types
         if (!response || response.status !== 200 || response.type === 'error') {
           return response;
         }
 
-        // Clone the response
-        const responseToCache = response.clone();
-
-        // Cache successful responses
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+        // Only cache HTML and non-versioned assets
+        if (!isAsset || event.request.url.includes('/assets/')) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
 
         return response;
       }).catch(() => {
         // Return a fallback response if offline
-        return caches.match('/index.html');
+        return caches.match('/Random-Guess/index.html');
       });
     })
   );
