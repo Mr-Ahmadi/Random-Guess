@@ -31,40 +31,73 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network-first strategy for dynamic content
+// Fetch event - stale-while-revalidate strategy
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Validate response
-        if (!response || response.status !== 200) {
-          return response;
-        }
+  const url = new URL(event.request.url);
+  const isHtmlRequest = event.request.url.endsWith('.html') || event.request.url.endsWith('/');
+  const isAssetRequest = url.pathname.includes('/assets/');
 
-        // Cache only HTML pages (not versioned assets)
-        if (event.request.url.endsWith('.html') || !event.request.url.includes('/assets/')) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-
-        return response;
-      })
-      .catch(() => {
-        // If network fails, try cache
-        return caches.match(event.request).then((cachedResponse) => {
+  if (isAssetRequest) {
+    // For versioned assets (with hashes), use cache-first strategy
+    event.respondWith(
+      caches.match(event.request)
+        .then((cachedResponse) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // Fallback to cached index.html if offline
+          return fetch(event.request).then((response) => {
+            if (!response || response.status !== 200 || response.type === 'error') {
+              return response;
+            }
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+            return response;
+          });
+        })
+        .catch(() => {
+          // If both cache and network fail, return a generic offline page
           return caches.match('/Random-Guess/index.html');
-        });
-      })
-  );
+        })
+    );
+  } else {
+    // For HTML and other requests, use network-first strategy
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200 || response.type === 'error') {
+            // On bad response, try cache
+            return caches.match(event.request).then((cachedResponse) => {
+              return cachedResponse || caches.match('/Random-Guess/index.html');
+            });
+          }
+
+          // Cache HTML pages
+          if (isHtmlRequest) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try cache
+          return caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // Fallback to cached index.html if offline
+            return caches.match('/Random-Guess/index.html');
+          });
+        })
+    );
+  }
 });
