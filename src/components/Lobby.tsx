@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Logo } from './Logo';
 import './Lobby.css';
 
 interface LobbyProps {
@@ -15,7 +16,10 @@ export function Lobby({ onStartGame }: LobbyProps) {
   return (
     <div className="lobby-container">
       <div className="lobby-card">
-        <h1 className="lobby-title">🎯 Word Guessing Game</h1>
+        <div className="lobby-logo-section">
+          <Logo size="lg" />
+        </div>
+        <h1 className="lobby-title">Word Guess</h1>
         <p className="lobby-subtitle">How many words can you guess?</p>
 
         <div className="form-group">

@@ -1,0 +1,20 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea" />
+      <stop offset="100%" style="stop-color:#764ba2" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#logoGradient)" opacity="0.1" />
+  
+  <!-- Outer ring -->
+  <circle cx="50" cy="50" r="42" fill="none" stroke="url(#logoGradient)" stroke-width="2" />
+  
+  <!-- Question mark design -->
+  <path d="M 50 25 Q 60 25 65 32 Q 68 37 65 42 Q 62 45 58 43" fill="none" stroke="url(#logoGradient)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Question mark dot -->
+  <circle cx="50" cy="58" r="2.5" fill="url(#logoGradient)" />
+</svg>

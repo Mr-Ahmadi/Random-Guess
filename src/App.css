@@ -16,13 +16,18 @@ body,
   font-size: 16px;
 }
 
-.app {
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(0.75rem, 3vw, 1.5rem);
+body {
+  margin: 0;
+  padding: 0;
+}
+
+button:hover {
+  border-color: #646cff;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
 }
 
 /* Mobile-first responsive typography */
@@ -48,6 +53,16 @@ body,
   #root {
     font-size: 13px;
   }
+}
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+  padding-top: clamp(5rem, 10vw, 7rem);
 }
 
 

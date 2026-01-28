@@ -31,6 +31,12 @@
   }
 }
 
+.lobby-logo-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
 .lobby-title {
   font-size: clamp(2rem, 7vw, 3rem);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

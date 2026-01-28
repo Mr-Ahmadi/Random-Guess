@@ -46,21 +46,23 @@ function App() {
   };
 
   return (
-    <div className="app">
-      {gameContext.state === 'LOBBY' && <Lobby onStartGame={handleStartGame} />}
-      {gameContext.state === 'IN_GAME' && (
-        <GameBoard
-          gameContext={gameContext}
-          onNextWord={handleNextWord}
-          onSkipWord={handleSkipWord}
-          onReady={handleReady}
-          onTimerEnd={handleTimerEnd}
-        />
-      )}
-      {gameContext.state === 'GAME_OVER' && (
-        <GameOver gameContext={gameContext} onRestartGame={handleRestartGame} />
-      )}
-    </div>
+    <>
+      <div className="app">
+        {gameContext.state === 'LOBBY' && <Lobby onStartGame={handleStartGame} />}
+        {gameContext.state === 'IN_GAME' && (
+          <GameBoard
+            gameContext={gameContext}
+            onNextWord={handleNextWord}
+            onSkipWord={handleSkipWord}
+            onReady={handleReady}
+            onTimerEnd={handleTimerEnd}
+          />
+        )}
+        {gameContext.state === 'GAME_OVER' && (
+          <GameOver gameContext={gameContext} onRestartGame={handleRestartGame} />
+        )}
+      </div>
+    </>
   );
 }
 
