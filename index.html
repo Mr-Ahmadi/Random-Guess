@@ -2,13 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/Random-Guess/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/Random-Guess/logo.svg" />
+    <link rel="manifest" href="/Random-Guess/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>random-guess</title>
-    <script type="module" crossorigin src="/Random-Guess/assets/index-zRxRMX0_.js"></script>
-    <link rel="stylesheet" crossorigin href="/Random-Guess/assets/index-BH1uG49W.css">
+    <meta name="description" content="A fun word guessing game to test your vocabulary and quick thinking" />
+    <meta name="theme-color" content="#667eea" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Word Guess" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea' /><stop offset='100%' style='stop-color:%23764ba2' /></linearGradient></defs><rect width='180' height='180' fill='url(%23g)'/><circle cx='90' cy='90' r='70' fill='none' stroke='white' stroke-width='4'/><path d='M 90 45 Q 110 45 120 60 Q 126 70 120 80 Q 114 86 106 82' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/><circle cx='90' cy='115' r='4' fill='white'/></svg>" />
+    <title>Word Guess Game</title>
+    <script type="module" crossorigin src="/Random-Guess/assets/index-B-hdqzHz.js"></script>
+    <link rel="stylesheet" crossorigin href="/Random-Guess/assets/index-B2oTDENu.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
