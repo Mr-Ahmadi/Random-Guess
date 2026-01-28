@@ -31,30 +31,23 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - network-first strategy for dynamic content
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return;
   }
 
-  const url = new URL(event.request.url);
-  const isAsset = url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff2|woff|ttf)$/i);
-
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response;
-      }
-
-      return fetch(event.request).then((response) => {
-        // Don't cache non-successful responses or error types
-        if (!response || response.status !== 200 || response.type === 'error') {
+    fetch(event.request)
+      .then((response) => {
+        // Validate response
+        if (!response || response.status !== 200) {
           return response;
         }
 
-        // Only cache HTML and non-versioned assets
-        if (!isAsset || event.request.url.includes('/assets/')) {
+        // Cache only HTML pages (not versioned assets)
+        if (event.request.url.endsWith('.html') || !event.request.url.includes('/assets/')) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -62,10 +55,16 @@ self.addEventListener('fetch', (event) => {
         }
 
         return response;
-      }).catch(() => {
-        // Return a fallback response if offline
-        return caches.match('/Random-Guess/index.html');
-      });
-    })
+      })
+      .catch(() => {
+        // If network fails, try cache
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Fallback to cached index.html if offline
+          return caches.match('/Random-Guess/index.html');
+        });
+      })
   );
 });
