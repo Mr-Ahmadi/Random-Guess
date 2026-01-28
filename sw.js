@@ -1,8 +1,8 @@
-const CACHE_NAME = 'word-guess-v2';
+const CACHE_NAME = 'word-guess-v3';
 const URLS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
+  '/Random-Guess/',
+  '/Random-Guess/index.html',
+  '/Random-Guess/manifest.json',
 ];
 
 // Install event - cache resources
