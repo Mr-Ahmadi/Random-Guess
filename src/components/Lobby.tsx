@@ -4,9 +4,11 @@ import './Lobby.css';
 
 interface LobbyProps {
   onStartGame: (teamName: string, timerDuration: number) => void;
+  wordsLoading?: boolean;
+  wordsReady?: boolean;
 }
 
-export function Lobby({ onStartGame }: LobbyProps) {
+export function Lobby({ onStartGame, wordsLoading = false, wordsReady = true }: LobbyProps) {
   const [timerDuration, setTimerDuration] = useState(60);
 
   const handleStartGame = () => {
@@ -58,8 +60,13 @@ export function Lobby({ onStartGame }: LobbyProps) {
           </div>
         </div>
 
-        <button className="start-button" onClick={handleStartGame}>
-          Start Game
+        <button
+          className="start-button"
+          onClick={handleStartGame}
+          disabled={wordsLoading || !wordsReady}
+          aria-busy={wordsLoading}
+        >
+          {wordsLoading ? 'Loading words…' : 'Start Game'}
         </button>
       </div>
     </div>

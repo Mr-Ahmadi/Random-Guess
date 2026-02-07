@@ -158,6 +158,12 @@
   transform: translateY(-1px);
 }
 
+.start-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
 @media (max-width: 640px) {
   .lobby-card {
     padding: clamp(1.75rem, 5vw, 2.75rem);

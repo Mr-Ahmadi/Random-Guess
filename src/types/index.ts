@@ -4,6 +4,8 @@ export interface Team {
   id: string;
   name: string;
   score: number;
+  streak?: number;
+  bestStreak?: number;
 }
 
 export interface GameContext {

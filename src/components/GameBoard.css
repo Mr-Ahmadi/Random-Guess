@@ -47,6 +47,14 @@
   text-transform: uppercase;
 }
 
+.team-streak {
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  font-weight: 700;
+  color: #fbbf24;
+  margin-top: 0.25rem;
+  letter-spacing: 0.3px;
+}
+
 .gameboard-content {
   flex: 1;
   width: 100%;

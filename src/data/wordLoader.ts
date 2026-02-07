@@ -8,7 +8,8 @@ export async function loadWords(): Promise<string[]> {
   }
 
   try {
-    const response = await fetch('/words.en.json');
+    const base = import.meta.env.BASE_URL || '/';
+    const response = await fetch(`${base}words.en.json`);
     if (!response.ok) {
       throw new Error('Failed to load words dataset');
     }
@@ -30,6 +31,9 @@ export async function loadWords(): Promise<string[]> {
 }
 
 export function getRandomWord(allWords: string[], usedWords: Set<string>): string {
+  if (!allWords || allWords.length === 0) {
+    return getFallbackWords()[0];
+  }
   const availableWords = allWords.filter((word) => !usedWords.has(word));
 
   if (availableWords.length === 0) {

@@ -1,8 +1,24 @@
 import { useCallback } from 'react';
+import confetti from 'canvas-confetti';
 import type { GameContext } from '../types/index';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { playReadyBeep, playGotItBeep, playSkipBeep, playTimeEndedBeep } from '../utils/soundEffects';
 import './GameBoard.css';
+
+function fireConfetti() {
+  confetti({
+    particleCount: 50,
+    spread: 60,
+    origin: { y: 0.6 },
+    colors: ['#667eea', '#764ba2', '#10b981', '#fbbf24'],
+  });
+}
+
+function hapticLight() {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(10);
+  }
+}
 
 type GameBoardProps = {
   gameContext: GameContext;
@@ -33,16 +49,21 @@ export function GameBoard({ gameContext, onNextWord, onSkipWord, onReady, onTime
 
   const handleReady = () => {
     playReadyBeep();
+    hapticLight();
     onReady();
   };
 
   const handleGotIt = () => {
     playGotItBeep();
+    hapticLight();
+    const streak = team?.streak ?? 0;
+    if (streak >= 1) fireConfetti(); // celebrate 2+ in a row
     onNextWord();
   };
 
   const handleSkip = () => {
     playSkipBeep();
+    hapticLight();
     onSkipWord();
   };
 
@@ -53,6 +74,9 @@ export function GameBoard({ gameContext, onNextWord, onSkipWord, onReady, onTime
       <div className="gameboard-header">
         <div className="team-info">
           <div className="team-score">Score: {team.score}</div>
+          {team.streak !== undefined && team.streak > 0 && (
+            <div className="team-streak">🔥 {team.streak} streak</div>
+          )}
         </div>
       </div>
 
@@ -75,7 +99,7 @@ export function GameBoard({ gameContext, onNextWord, onSkipWord, onReady, onTime
             </div>
           ) : (
             <div className="word-display">
-              {gameContext.currentWord}
+              {gameContext.currentWord || '…'}
             </div>
           )}
         </div>

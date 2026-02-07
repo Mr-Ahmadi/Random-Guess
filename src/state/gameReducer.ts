@@ -14,6 +14,8 @@ export function gameReducer(state: GameContext, action: GameAction): GameContext
         id: 'team-1',
         name: payload.teamName,
         score: 0,
+        streak: 0,
+        bestStreak: 0,
       };
 
       const allWords = payload.allWords;
@@ -37,9 +39,13 @@ export function gameReducer(state: GameContext, action: GameAction): GameContext
         return state;
       }
 
+      const newStreak = (state.team.streak ?? 0) + 1;
+      const bestStreak = Math.max(state.team.bestStreak ?? 0, newStreak);
       const updatedTeam = {
         ...state.team,
         score: state.team.score + 1,
+        streak: newStreak,
+        bestStreak,
       };
 
       const currentWord = getRandomWord(state.allWords, state.usedWords);
@@ -54,15 +60,20 @@ export function gameReducer(state: GameContext, action: GameAction): GameContext
     }
 
     case 'SKIP_WORD': {
-      if (state.state !== 'IN_GAME') {
+      if (state.state !== 'IN_GAME' || !state.team) {
         return state;
       }
 
+      const updatedTeam = {
+        ...state.team,
+        streak: 0,
+      };
       const currentWord = getRandomWord(state.allWords, state.usedWords);
       state.usedWords.add(currentWord);
 
       return {
         ...state,
+        team: updatedTeam,
         currentWord,
         isPaused: true,
       };

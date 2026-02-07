@@ -9,9 +9,13 @@ import './App.css';
 function App() {
   const [gameContext, dispatch] = useReducer(gameReducer, initialGameState);
   const [allWordsLoaded, setAllWordsLoaded] = useState<string[]>([]);
+  const [wordsLoading, setWordsLoading] = useState(true);
 
   useEffect(() => {
-    loadWords().then(setAllWordsLoaded).catch(console.error);
+    loadWords()
+      .then(setAllWordsLoaded)
+      .catch(console.error)
+      .finally(() => setWordsLoading(false));
   }, []);
 
   const handleStartGame = (teamName: string, timerDuration: number) => {
@@ -20,7 +24,7 @@ function App() {
       payload: {
         teamName,
         timerDuration,
-        allWords: allWordsLoaded,
+        allWords: allWordsLoaded.length > 0 ? allWordsLoaded : [], // reducer + getRandomWord use fallback when empty
       },
     });
   };
@@ -48,7 +52,13 @@ function App() {
   return (
     <>
       <div className="app">
-        {gameContext.state === 'LOBBY' && <Lobby onStartGame={handleStartGame} />}
+        {gameContext.state === 'LOBBY' && (
+          <Lobby
+            onStartGame={handleStartGame}
+            wordsLoading={wordsLoading}
+            wordsReady={allWordsLoaded.length > 0}
+          />
+        )}
         {gameContext.state === 'IN_GAME' && (
           <GameBoard
             gameContext={gameContext}
