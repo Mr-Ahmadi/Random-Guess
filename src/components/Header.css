@@ -5,7 +5,7 @@
   right: 0;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.14);
   z-index: 1000;
   padding: 0.75rem 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
@@ -28,7 +28,7 @@
 
 .header-title {
   font-size: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f97316 0%, #0f766e 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

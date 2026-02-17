@@ -4,6 +4,7 @@ import { GameBoard } from './components/GameBoard';
 import { GameOver } from './components/GameOver';
 import { gameReducer, initialGameState } from './state/gameReducer';
 import { loadWords } from './data/wordLoader';
+import type { GameMode } from './types';
 import './App.css';
 
 function App() {
@@ -18,31 +19,43 @@ function App() {
       .finally(() => setWordsLoading(false));
   }, []);
 
-  const handleStartGame = (teamName: string, timerDuration: number) => {
+  const handleStartGame = (
+    mode: GameMode,
+    names: string[],
+    timerDuration: number,
+    requireReadyAfterPass: boolean
+  ) => {
     dispatch({
       type: 'INITIALIZE_GAME',
       payload: {
-        teamName,
+        mode,
+        teamNames: mode === 'MULTI_PHONE' ? names : undefined,
+        playerNames: mode === 'SINGLE_PHONE' ? names : undefined,
         timerDuration,
+        requireReadyAfterPass,
         allWords: allWordsLoaded.length > 0 ? allWordsLoaded : [], // reducer + getRandomWord use fallback when empty
       },
     });
   };
 
-  const handleNextWord = () => {
-    dispatch({ type: 'NEXT_WORD' });
+  const handleNextWord = (timeRemaining?: number) => {
+    dispatch({ type: 'NEXT_WORD', payload: { timeRemaining } });
   };
 
-  const handleSkipWord = () => {
-    dispatch({ type: 'SKIP_WORD' });
+  const handleSkipWord = (timeRemaining?: number) => {
+    dispatch({ type: 'SKIP_WORD', payload: { timeRemaining } });
   };
 
-  const handleReady = () => {
+  const handlePause = () => {
+    dispatch({ type: 'PAUSE_GAME' });
+  };
+
+  const handleResume = () => {
     dispatch({ type: 'RESUME_GAME' });
   };
 
-  const handleTimerEnd = () => {
-    dispatch({ type: 'TIMER_ENDED' });
+  const handleTimerEnd = (timeRemaining?: number) => {
+    dispatch({ type: 'TIMER_ENDED', payload: { timeRemaining } });
   };
 
   const handleRestartGame = () => {
@@ -61,10 +74,13 @@ function App() {
         )}
         {gameContext.state === 'IN_GAME' && (
           <GameBoard
+            key={`${gameContext.mode}-${gameContext.turnResetKey}`}
             gameContext={gameContext}
             onNextWord={handleNextWord}
             onSkipWord={handleSkipWord}
-            onReady={handleReady}
+            onReady={handleResume}
+            onPause={handlePause}
+            onExit={handleRestartGame}
             onTimerEnd={handleTimerEnd}
           />
         )}

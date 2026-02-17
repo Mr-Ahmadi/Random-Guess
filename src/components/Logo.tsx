@@ -19,12 +19,12 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       {/* Gradient definitions */}
       <defs>
         <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#667eea" />
-          <stop offset="100%" stopColor="#764ba2" />
+          <stop offset="0%" stopColor="#f97316" />
+          <stop offset="100%" stopColor="#ea580c" />
         </linearGradient>
         <linearGradient id="accentGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#f093fb" />
-          <stop offset="100%" stopColor="#f5576c" />
+          <stop offset="0%" stopColor="#14b8a6" />
+          <stop offset="100%" stopColor="#0f766e" />
         </linearGradient>
       </defs>
 

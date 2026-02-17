@@ -10,7 +10,7 @@ function fireConfetti() {
     particleCount: 50,
     spread: 60,
     origin: { y: 0.6 },
-    colors: ['#667eea', '#764ba2', '#10b981', '#fbbf24'],
+    colors: ['#f97316', '#14b8a6', '#22c55e', '#f59e0b'],
   });
 }
 
@@ -20,32 +20,93 @@ function hapticLight() {
   }
 }
 
+function formatSeconds(totalSeconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
 type GameBoardProps = {
   gameContext: GameContext;
-  onNextWord: () => void;
-  onSkipWord: () => void;
+  onNextWord: (timeRemaining?: number) => void;
+  onSkipWord: (timeRemaining?: number) => void;
   onReady: () => void;
-  onTimerEnd: () => void;
+  onPause: () => void;
+  onExit: () => void;
+  onTimerEnd: (timeRemaining?: number) => void;
 };
 
-export function GameBoard({ gameContext, onNextWord, onSkipWord, onReady, onTimerEnd }: GameBoardProps) {
-  const team = gameContext.team;
-  
+export function GameBoard({
+  gameContext,
+  onNextWord,
+  onSkipWord,
+  onReady,
+  onPause,
+  onExit,
+  onTimerEnd
+}: GameBoardProps) {
+  const isSinglePhoneMode = gameContext.mode === 'SINGLE_PHONE';
+  const currentPlayer = isSinglePhoneMode ? gameContext.players[gameContext.currentPlayerIndex] : null;
+  const activeTeam = isSinglePhoneMode
+    ? gameContext.teams.find((team) => team.id === currentPlayer?.teamId) ?? null
+    : gameContext.teams[gameContext.currentTeamIndex] ?? null;
+
+  const teammates = isSinglePhoneMode && activeTeam
+    ? gameContext.players.filter((player) => activeTeam.memberIds?.includes(player.id))
+    : [];
+  const teammateName = teammates.find((player) => player.id !== currentPlayer?.id)?.name ?? null;
+
+  const isPassPhonePause = gameContext.isPaused && gameContext.pauseReason === 'PASS_PHONE';
+  const activeDuration = Math.max(0, activeTeam?.remainingTime ?? gameContext.timerDuration);
+  const initialTeamDuration = Math.max(0, gameContext.timerDuration);
+
   const timeRemaining = useGameTimer({
-    duration: gameContext.timerDuration,
+    duration: activeDuration,
     isActive: !gameContext.isPaused && gameContext.state === 'IN_GAME',
     onTimerEnd: useCallback(() => {
       playTimeEndedBeep();
-      onTimerEnd();
+      onTimerEnd(0);
     }, [onTimerEnd]),
   });
 
-  const minutes = Math.floor(timeRemaining / 60);
-  const seconds = Math.floor(timeRemaining % 60);
-  const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const timeString = formatSeconds(timeRemaining);
+  const progressPercent = activeDuration > 0 ? (timeRemaining / activeDuration) : 0;
+  const isLowTime = timeRemaining < activeDuration * 0.2;
 
-  const progressPercent = (timeRemaining / gameContext.timerDuration) * 100;
-  const isLowTime = timeRemaining < gameContext.timerDuration * 0.2;
+  const getNextEligiblePlayer = () => {
+    if (!isSinglePhoneMode || gameContext.players.length === 0) return null;
+    const teamById = new Map(gameContext.teams.map((team) => [team.id, team]));
+    const startIndex = gameContext.currentPlayerIndex;
+    const totalPlayers = gameContext.players.length;
+
+    for (let offset = 1; offset <= totalPlayers; offset += 1) {
+      const candidateIndex = (startIndex + offset) % totalPlayers;
+      const candidate = gameContext.players[candidateIndex];
+      const candidateTeam = teamById.get(candidate.teamId);
+      if (candidateTeam && !candidateTeam.eliminated) {
+        return { player: candidate, team: candidateTeam };
+      }
+    }
+    return null;
+  };
+
+  if (!activeTeam) return null;
+
+  const nextEligible = getNextEligiblePlayer();
+
+  const teamTimeRows = gameContext.teams
+    .map((team) => {
+      const baseRemaining = team.id === activeTeam.id ? timeRemaining : (team.remainingTime ?? initialTeamDuration);
+      const remaining = Math.max(0, baseRemaining);
+      return {
+        ...team,
+        remaining,
+        percent: initialTeamDuration > 0 ? (remaining / initialTeamDuration) * 100 : 0,
+        isActive: team.id === activeTeam.id,
+      };
+    })
+    .sort((a, b) => b.remaining - a.remaining);
 
   const handleReady = () => {
     playReadyBeep();
@@ -56,71 +117,138 @@ export function GameBoard({ gameContext, onNextWord, onSkipWord, onReady, onTime
   const handleGotIt = () => {
     playGotItBeep();
     hapticLight();
-    const streak = team?.streak ?? 0;
-    if (streak >= 1) fireConfetti(); // celebrate 2+ in a row
-    onNextWord();
+    const streak = activeTeam?.streak ?? 0;
+    if (streak >= 1) fireConfetti();
+    onNextWord(timeRemaining);
   };
 
   const handleSkip = () => {
     playSkipBeep();
     hapticLight();
-    onSkipWord();
+    onSkipWord(timeRemaining);
   };
 
-  if (!team) return null;
+  // SVG dimensions for circular progress
+  const radius = 90;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - progressPercent * circumference;
 
   return (
     <div className="gameboard-container">
-      <div className="gameboard-header">
-        <div className="team-info">
-          <div className="team-score">Score: {team.score}</div>
-          {team.streak !== undefined && team.streak > 0 && (
-            <div className="team-streak">🔥 {team.streak} streak</div>
+      {/* Pass Phone / Pause Overlay */}
+      {gameContext.isPaused && (
+        <div className="pass-phone-overlay">
+          {isPassPhonePause && currentPlayer ? (
+            <>
+              <div className="pass-phone-title">PASS PHONE</div>
+              <div className="pass-phone-player">{currentPlayer.name}</div>
+              <div className="pass-phone-hint">... THEN TAP READY</div>
+            </>
+          ) : (
+            <>
+              <div className="pass-phone-title">Game Paused</div>
+              <div className="pass-phone-player">PAUSED</div>
+              <div className="pass-phone-hint">Tap Ready to Resume</div>
+            </>
+          )}
+          <div style={{ marginTop: '2rem', width: 'min(300px, 100%)' }}>
+            <button className="btn-game btn-ready" onClick={handleReady}>Ready</button>
+          </div>
+        </div>
+      )}
+
+      <header className="gameboard-header">
+        <div className="header-controls">
+          <button className="icon-button" onClick={onExit} title="Back to Lobby">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          </button>
+          {!gameContext.isPaused && (
+            <button className="icon-button" onClick={onPause} title="Pause Game">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+            </button>
           )}
         </div>
-      </div>
 
-      <div className="gameboard-content">
-        <div className={`timer-display ${isLowTime ? 'low-time' : ''}`}>
-          <div 
-            className="timer-circle" 
-            style={{ 
-              backgroundImage: `conic-gradient(#667eea ${progressPercent * 3.6}deg, #f0f0f0 ${progressPercent * 3.6}deg)` 
-            }}
-          >
-            <div className="timer-text">{timeString}</div>
+        <div className="team-info">
+          <div className="team-score">
+            {isSinglePhoneMode ? (
+              <span>{currentPlayer?.name} is Guessing {teammateName ? `• For ${teammateName}` : ''}</span>
+            ) : (
+              <span>{activeTeam.name} • Score: {activeTeam.score}</span>
+            )}
           </div>
         </div>
 
-        <div className="word-container">
-          {gameContext.isPaused ? (
-            <div className="word-display paused">
-              ⏸ Ready for the next word?
+        {isSinglePhoneMode && nextEligible ? (
+          <div className="team-info" style={{ opacity: 0.8, transform: 'scale(0.9)' }}>
+            <div className="team-score" style={{ fontSize: '0.8rem', color: 'var(--ink-soft)' }}>
+              Next Player: {nextEligible.player.name}
             </div>
-          ) : (
-            <div className="word-display">
-              {gameContext.currentWord || '…'}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : <div style={{ width: 48 }} />}
+      </header>
 
-        <div className="button-group">
-          {gameContext.isPaused ? (
-            <button className="action-button ready-button" onClick={handleReady}>
-              ✓ Ready
-            </button>
-          ) : (
-            <>
-              <button className="action-button next-button" onClick={handleGotIt}>
-                ✓ Got It!
-              </button>
-              <button className="action-button skip-button" onClick={handleSkip}>
-                ⊘ Skip
-              </button>
-            </>
+      <main className="gameboard-content">
+        <section className="timer-section">
+          <div className={`timer-display ${isLowTime ? 'low-time' : ''}`}>
+            <svg className="timer-svg" viewBox="0 0 200 200">
+              <circle className="timer-circle-bg" cx="100" cy="100" r={radius} />
+              <circle
+                className="timer-circle-progress"
+                cx="100"
+                cy="100"
+                r={radius}
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
+              />
+            </svg>
+            <div className="timer-text">{timeString}</div>
+          </div>
+          {activeTeam.streak !== undefined && activeTeam.streak > 0 && (
+            <div className="team-streak-badge">
+              🔥 {activeTeam.streak} Streak
+            </div>
           )}
-        </div>
-      </div>
+        </section>
+
+        <section className="word-section">
+          <div className="word-card">
+            <div className="word-display">
+              {gameContext.currentWord || '...'}
+            </div>
+          </div>
+        </section>
+
+        {isSinglePhoneMode && (
+          <section className="team-clocks-card">
+            <div className="clocks-title">Team Clocks</div>
+            <div className="clocks-grid">
+              {teamTimeRows.map((team) => (
+                <div className={`clock-row ${team.isActive ? 'active' : ''}`} key={team.id}>
+                  <div className="clock-team-name">{team.name}</div>
+                  <div className="clock-time-info">
+                    <span className="clock-remaining">{formatSeconds(team.remaining)}</span>
+                    <span className="clock-total">/ {formatSeconds(initialTeamDuration)}</span>
+                    <div className="clock-progress-bar">
+                      <div
+                        className="clock-progress-fill"
+                        style={{ width: `${team.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!gameContext.isPaused && (
+          <section className="game-actions">
+            <button className="btn-game btn-got-it" onClick={handleGotIt}>Got It</button>
+            <button className="btn-game btn-skip" onClick={handleSkip}>Skip</button>
+          </section>
+        )}
+      </main>
     </div>
   );
 }

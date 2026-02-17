@@ -9,8 +9,12 @@ type UseGameTimerProps = {
 export function useGameTimer({ duration, isActive, onTimerEnd }: UseGameTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const animationFrameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(Date.now());
+  const lastTimeRef = useRef<number>(0);
   const wasActivePrevRef = useRef<boolean>(isActive);
+
+  useEffect(() => {
+    lastTimeRef.current = Date.now();
+  }, []);
 
   useEffect(() => {
     if (!isActive) {
@@ -44,11 +48,6 @@ export function useGameTimer({ duration, isActive, onTimerEnd }: UseGameTimerPro
       }
     };
   }, [isActive, onTimerEnd]);
-
-  useEffect(() => {
-    setTimeRemaining(duration);
-    lastTimeRef.current = Date.now();
-  }, [duration]);
 
   useEffect(() => {
     // Preserve time remaining when transitioning from paused to active
