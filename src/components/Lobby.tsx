@@ -110,12 +110,10 @@ export function Lobby({ onStartGame, wordsLoading = false, wordsReady = true }: 
               />
               <span className="pass-option-copy">
                 <strong>Show pass-phone pause screen</strong>
-                <span>Pause between turns to pass the device.</span>
+                {/* <span>Pause between turns to pass the device.</span> */}
               </span>
-              <span className="pass-option-check" aria-hidden="true">
-                <svg viewBox="0 0 20 20" fill="none">
-                  <path d="M5 10.5L8.4 14L15 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+              <span className="pass-option-state" aria-hidden="true">
+                {requireReadyAfterPass ? 'On' : 'Off'}
               </span>
             </label>
           </div>

@@ -172,7 +172,7 @@ export function GameBoard({
         <div className="team-info">
           <div className="team-score">
             {isSinglePhoneMode ? (
-              <span>{currentPlayer?.name} is Guessing {teammateName ? `• For ${teammateName}` : ''}</span>
+              <span>{currentPlayer?.name} is Playing {teammateName ? `• For ${teammateName}` : ''}</span>
             ) : (
               <span>{activeTeam.name} • Score: {activeTeam.score}</span>
             )}

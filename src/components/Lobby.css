@@ -375,43 +375,35 @@
   margin: 0;
 }
 
-.pass-option-check {
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
-  border: 2px solid #cbd5e1;
-  background: #f8fafc;
-  position: relative;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
+.pass-option-state {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink-soft);
+  background: rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 999px;
+  padding: 0.22rem 0.52rem;
   margin-left: auto;
-}
-
-.pass-option-check svg {
-  width: 16px;
-  height: 16px;
-  opacity: 0;
-  transform: scale(0.8);
+  align-self: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
-.pass-option-input:focus-visible+.pass-option-copy+.pass-option-check {
+.pass-option-input:focus-visible + .pass-option-copy {
+  border-radius: 12px;
   box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
-.pass-option-input:checked+.pass-option-copy+.pass-option-check {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  box-shadow: 0 8px 16px var(--primary-glow);
-}
-
-.pass-option-input:checked+.pass-option-copy+.pass-option-check svg {
-  opacity: 1;
-  transform: scale(1);
+.pass-option-input:checked + .pass-option-copy + .pass-option-state {
+  color: var(--primary-dark);
+  background: color-mix(in srgb, var(--primary-glow) 55%, white 45%);
+  border-color: color-mix(in srgb, var(--primary) 45%, white 55%);
 }
 
 .pass-option:has(.pass-option-input:checked) {
@@ -595,13 +587,21 @@
 .modal-content {
   padding: 1.5rem 1.8rem;
   max-height: 80vh;
-  overflow-y: auto;
+  overflow: hidden;
   flex: 1;
+  display: flex;
+  min-height: 0;
 }
 
 .team-preview.grid {
   display: grid;
   gap: 0.6rem;
+  flex: 1;
+  height: 100%;
+  max-height: none;
+  margin-top: 0;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .modal-action-btn {
