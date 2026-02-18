@@ -303,6 +303,9 @@
   padding: clamp(0.55rem, 1.5vh, 1rem);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .clocks-title {
@@ -317,6 +320,24 @@
 .clocks-grid {
   display: grid;
   gap: 0.5rem;
+  max-height: min(30vh, 260px);
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+}
+
+.clocks-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.clocks-grid::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.clocks-grid::-webkit-scrollbar-thumb {
+  background: var(--ink-soft);
+  border-radius: 10px;
 }
 
 .clock-row {

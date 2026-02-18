@@ -1,254 +1,135 @@
-# Team Word Guessing Game
+# Word Guess
 
-A fast-paced, team-based word guessing game built with React, TypeScript, and Vite. Perfect for playing with friends over video calls like Google Meet.
+A fast-paced word guessing game built with React, TypeScript, and Vite.
 
-## Features
+## Highlights
 
-- **Team-Based Gameplay**: Divide players into teams and play sequentially
-- **Real-Time Countdown Timer**: Frame-independent timer with smooth animations
-- **Word Management**: Randomly selected words from an editable JSON dataset
-- **Score Tracking**: Keep track of guesses for each team
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
-- **No Backend Required**: Pure client-side state management - host is authoritative
-- **External Communication**: Integrates with external video calls (Google Meet, Zoom, etc.)
+- Two game modes:
+  - `MULTI_PHONE`: classic single-team play flow
+  - `SINGLE_PHONE`: one device is passed between players
+- Per-team countdown timers
+- Optional pass-phone pause screen between turns in single-phone mode
+- Team pairing preview modal in lobby
+- Team clocks panel in game (scrollable for many teams)
+- Word dataset loaded from `public/words.en.json`
+- No backend required (all state is local)
 
 ## Game Rules
 
-1. Players are organized into **teams**
-2. Teams play **sequentially** - one team plays at a time while others communicate externally
-3. Each team has its own **countdown timer** (configurable duration)
-4. When a word is guessed correctly, press **"Got It!"** to score a point and get the next word
-5. Press **"Skip"** to move to the next word without scoring
-6. **The moment ANY team's timer reaches zero, the entire game ends immediately**
-7. The game displays final scores and which team ran out of time
+### Multi-phone mode
 
-## Game States
+1. Start the game with the selected team timer.
+2. Tap `Got It` for a correct guess (adds score, keeps turn flow).
+3. Tap `Skip` to move on without scoring.
+4. When the active timer reaches zero, game ends.
 
-### LOBBY
-- Enter team names (2-6 teams)
-- Set timer duration (10-300 seconds)
-- Select language (English - all words are in English)
-- Start the game (host initiates)
+### Single-phone mode
 
-### IN_GAME
-- Shows the current team name and score
-- Large, readable countdown timer with visual progress indicator
-- Current word display
-- "Got It!" button to score and advance to next word
-- "Skip" button to skip without scoring
-- Team status list showing all teams and their scores
+1. Enter an even number of players (minimum 4).
+2. Players are paired into teams: first half + second half.
+3. Each team has its own timer pool and can be eliminated when timer hits zero.
+4. The game continues until one team remains (winner).
+5. You can enable `Show pass-phone pause screen` to require a `Ready` tap between turns.
 
-### GAME_OVER
-- Displays which team ran out of time
-- Shows final scores ranked by number of guesses
-- "Play Again" button to restart
+## Lobby Setup
 
-## Tech Stack
-
-- **React 18** - UI framework
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool and dev server
-- **CSS 3** - Responsive styling with flexbox and gradients
+- Select mode: `Multi-phone` or `Single-phone`
+- Set team timer: presets (`30s`, `60s`, `90s`) or custom (`10-300`)
+- Single-phone only:
+  - Enter players (one per line)
+  - View generated team pairings
+  - Toggle pass-phone pause behavior (`On` / `Off`)
 
 ## Project Structure
 
-```
+```text
 src/
-├── components/          # React components
-│   ├── Lobby.tsx       # Game setup screen
-│   ├── Lobby.css       # Lobby styling
-│   ├── GameBoard.tsx   # Main gameplay screen
-│   ├── GameBoard.css   # Gameplay styling
-│   ├── GameOver.tsx    # Game completion screen
-│   └── GameOver.css    # Game over styling
-├── hooks/              # Custom React hooks
-│   └── useGameTimer.ts # Frame-independent timer hook
-├── state/              # State management
-│   └── gameReducer.ts  # Game state reducer and initial state
-├── types/              # TypeScript interfaces
-│   └── index.ts        # Type definitions
-├── data/               # Data management
-│   └── wordLoader.ts   # Word loading and selection logic
-├── App.tsx             # Root component
-├── App.css             # Root styling
-├── main.tsx            # React entry point
-└── index.css           # Global styles
+├── components/
+│   ├── Lobby.tsx
+│   ├── Lobby.css
+│   ├── GameBoard.tsx
+│   ├── GameBoard.css
+│   ├── GameOver.tsx
+│   ├── GameOver.css
+│   └── Logo.tsx
+├── data/
+│   └── wordLoader.ts
+├── hooks/
+│   └── useGameTimer.ts
+├── state/
+│   └── gameReducer.ts
+├── types/
+│   └── index.ts
+├── App.tsx
+├── App.css
+└── main.tsx
 public/
-└── words.en.json       # Word dataset (editable)
+└── words.en.json
+scripts/
+└── generate-icons.mjs
 ```
 
-## Installation
+## Requirements
 
-### Prerequisites
-- Node.js 20.16+ (or upgrade to 20.19+/22.12+)
-- npm or yarn
+- Node.js 20+
+- npm
 
-### Setup
+## Run Locally
 
-1. Clone or download the project:
-```bash
-cd Guess
-```
-
-2. Install dependencies:
 ```bash
 npm install
-```
-
-3. Start the development server:
-```bash
 npm run dev
 ```
 
-The app will open at `http://localhost:5173/`
+App runs at `http://localhost:5173` by default.
 
-## How to Play
+## Available Scripts
 
-### Setup Phase (Lobby)
-1. Set the timer duration in seconds (default: 60 seconds)
-2. Click "Start Game"
+- `npm run dev` - start dev server
+- `npm run build` - generate icons + type-check + production build
+- `npm run preview` - preview production build
+- `npm run lint` - run ESLint
+- `npm run deploy` - build and deploy `dist/` with `gh-pages`
 
-### Gameplay Phase (In-Game)
-1. A word appears in the large text box
-2. **Using External Communication** (Google Meet, Zoom, etc.):
-   - Players on the active team discuss the word externally
-   - Other teams stay silent and cannot see/hear the discussion
-3. When the team guesses the word correctly:
-   - Click "✓ Got It!" to score 1 point and display the next word
-4. If the team wants to skip without scoring:
-   - Click "⊘ Skip" to move to the next word (0 points awarded)
-5. **The timer automatically switches teams** when one team's time ends
-   - All teams share the same timer pool
-   - First team to run out of time ends the game
+## Words Dataset
 
-### Game End Phase (Game Over)
-1. The game ends when the first team runs out of time
-2. Final scores are displayed, ranked by most guesses
-3. Click "Play Again" to return to the lobby
+Edit `public/words.en.json`:
 
-## Customizing Words
-
-Words are stored in a simple, editable JSON file: `public/words.en.json`
-
-### Word Dataset Format
 ```json
 {
   "categories": {
-    "general": ["word1", "word2", "word3", ...]
+    "general": ["word1", "word2", "word3"]
   }
 }
 ```
 
-### Adding New Words
-1. Open `public/words.en.json`
-2. Add words to the "general" array
-3. Save the file
-4. Refresh the browser - new words will be available immediately
+Notes:
 
-### Notes on Words
-- Words are selected randomly without repetition
-- When all words are used, the pool reshuffles automatically
-- Add more words to extend gameplay sessions
+- Words are selected randomly without repetition until pool is exhausted.
+- When exhausted, selection continues via reshuffle behavior in loader/reducer flow.
 
-## Advanced Configuration
+## State Model (Core)
 
-### Timer Duration
-Set in the Lobby before starting the game. Range: 10-300 seconds.
+Main game context includes:
 
-### Team Count
-Choose 2-6 teams in the Lobby. Team names can be customized.
+- `state`: `LOBBY | IN_GAME | GAME_OVER`
+- `mode`: `MULTI_PHONE | SINGLE_PHONE`
+- `teams`, `players`
+- `timerDuration`, per-team `remainingTime`
+- `isPaused`, `pauseReason`
+- `winnerTeamId` (single-phone winner)
 
-### Game Logic
-The game uses a React `useReducer` for state management with a clear state machine:
-- State transitions: LOBBY → IN_GAME → GAME_OVER → LOBBY
-- Frame-independent timer (uses `requestAnimationFrame`)
-- Precise timer using elapsed time calculations
+See `src/types/index.ts` and `src/state/gameReducer.ts` for full behavior.
 
-## Running in Production
+## Build for Production
 
-To build for production:
 ```bash
 npm run build
-```
-
-To preview the production build:
-```bash
 npm run preview
 ```
 
-Deploy the `dist/` folder to any static hosting service (Vercel, Netlify, GitHub Pages, etc.).
-
-## Troubleshooting
-
-### Words not loading?
-- Ensure `public/words.en.json` exists and is valid JSON
-- Check browser console for errors
-- Fallback words will be used if the file fails to load
-
-### Timer seems incorrect?
-- The timer uses `requestAnimationFrame` for precise timing
-- It's independent of display refresh rate
-- Times are calculated from elapsed milliseconds, not frame count
-
-### Mobile responsiveness issues?
-- The app uses mobile-first responsive design
-- Tested on viewport widths from 320px and up
-- Try rotating your device or resizing your browser
-
-## Browser Support
-
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 15+
-- Mobile browsers (iOS Safari, Chrome Mobile, etc.)
-
-## Performance Notes
-
-- Component re-renders are optimized with proper hook dependencies
-- Timer uses `requestAnimationFrame` for smooth, efficient updates
-- Word dataset is cached after initial load
-- No backend calls - everything runs locally
-
-## Keyboard Shortcuts
-
-- While in-game, the buttons are touchable on mobile
-- Desktop users can click the buttons or use Tab+Enter for accessibility
-
-## API Reference
-
-### `useGameTimer` Hook
-
-```typescript
-const timeRemaining = useGameTimer({
-  duration: 60,           // Timer duration in seconds
-  isActive: true,         // Whether timer is running
-  onTimerEnd: () => {}    // Callback when timer reaches 0
-});
-```
-
-### Game State Types
-
-```typescript
-interface GameContext {
-  state: 'LOBBY' | 'IN_GAME' | 'GAME_OVER';
-  teams: Team[];
-  timerDuration: number;
-  currentTeamIndex: number;
-  currentWord: string | null;
-  usedWords: Set<string>;
-  allWords: string[];
-  winningTeamId: string | null;
-}
-```
+Deploy the generated `dist/` to any static host (Vercel, Netlify, GitHub Pages, etc.).
 
 ## License
 
-MIT - Feel free to use this game however you like!
-
-## Contributing
-
-Found a bug? Want to add features? Just modify the code:
-- Add words to `public/words.en.json`
-- Modify component styles (`.css` files)
-- Extend game logic in `src/state/gameReducer.ts`
-- Add new game states or features as needed
+MIT
