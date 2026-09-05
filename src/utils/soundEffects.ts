@@ -1,95 +1,124 @@
 /**
- * Audio context for generating sound effects
+ * Tiny Web Audio helpers - no asset files, everything is synthesised so the app
+ * stays installable and works offline.
  */
 let audioContext: AudioContext | null = null;
+let muted = readMuted();
 
-type AudioWindow = Window & {
-  webkitAudioContext?: typeof AudioContext;
-};
+const STORAGE_KEY = 'dowr.muted';
 
-/**
- * Initialize AudioContext if not already initialized
- */
-function getAudioContext(): AudioContext {
-  if (!audioContext) {
-    const audioWindow = window as AudioWindow;
-    const AudioContextConstructor = globalThis.AudioContext || audioWindow.webkitAudioContext;
-    if (!AudioContextConstructor) {
-      throw new Error('Web Audio API is not supported in this browser');
-    }
-    audioContext = new AudioContextConstructor();
+type AudioWindow = Window & { webkitAudioContext?: typeof AudioContext };
+
+function readMuted(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === '1';
+  } catch {
+    return false;
   }
-  if (!audioContext) {
-    throw new Error('Audio context is not available');
+}
+
+export function isMuted(): boolean {
+  return muted;
+}
+
+export function setMuted(next: boolean): void {
+  muted = next;
+  try {
+    localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
+  } catch {
+    // ignore storage failures
   }
+}
+
+function getAudioContext(): AudioContext | null {
+  if (audioContext) return audioContext;
+  const audioWindow = window as AudioWindow;
+  const Ctor = globalThis.AudioContext || audioWindow.webkitAudioContext;
+  if (!Ctor) return null;
+  audioContext = new Ctor();
   return audioContext;
 }
 
-/**
- * Play a beep sound with specified frequency and duration
- */
-function playBeep(frequency: number, duration: number = 100, volume: number = 0.3): void {
+type ToneOptions = {
+  frequency: number;
+  duration?: number;
+  volume?: number;
+  type?: OscillatorType;
+  delay?: number;
+};
+
+function tone({ frequency, duration = 0.1, volume = 0.25, type = 'sine', delay = 0 }: ToneOptions): void {
+  if (muted) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
   try {
-    const ctx = getAudioContext();
-    const now = ctx.currentTime;
-    
-    // Create oscillator and gain nodes
+    if (ctx.state === 'suspended') void ctx.resume();
+    const start = ctx.currentTime + delay;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
     osc.connect(gain);
     gain.connect(ctx.destination);
-    
-    osc.frequency.value = frequency;
-    osc.type = 'sine';
-    
-    // Set volume envelope
-    gain.gain.setValueAtTime(volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + duration / 1000);
-    
-    // Play the sound
-    osc.start(now);
-    osc.stop(now + duration / 1000);
+    osc.start(start);
+    osc.stop(start + duration + 0.02);
   } catch (error) {
-    console.error('Error playing beep:', error);
+    console.error('Audio error:', error);
   }
 }
 
-/**
- * Ready beep - ascending tone (positive)
- * Used when player clicks ready button
- */
-export function playReadyBeep(): void {
-  playBeep(800, 100, 0.3);
-  setTimeout(() => playBeep(1000, 100, 0.3), 120);
+/** Called from a user gesture so iOS unlocks audio playback. */
+export function primeAudio(): void {
+  const ctx = getAudioContext();
+  if (ctx?.state === 'suspended') void ctx.resume();
 }
 
-/**
- * Got it beep - double ascending tone (success)
- * Used when player clicks "Got It!"
- */
-export function playGotItBeep(): void {
-  playBeep(600, 80, 0.3);
-  setTimeout(() => playBeep(900, 80, 0.3), 100);
-  setTimeout(() => playBeep(1200, 80, 0.3), 200);
+export function playReady(): void {
+  tone({ frequency: 660, duration: 0.09 });
+  tone({ frequency: 880, duration: 0.12, delay: 0.09 });
 }
 
-/**
- * Skip beep - descending tone (neutral)
- * Used when player skips a word
- */
-export function playSkipBeep(): void {
-  playBeep(1000, 100, 0.3);
-  setTimeout(() => playBeep(700, 100, 0.3), 120);
+export function playCorrect(): void {
+  tone({ frequency: 620, duration: 0.08, type: 'triangle' });
+  tone({ frequency: 880, duration: 0.08, type: 'triangle', delay: 0.07 });
+  tone({ frequency: 1180, duration: 0.14, type: 'triangle', delay: 0.14 });
 }
 
-/**
- * Time ended beep - warning tone (alert)
- * Used when timer ends
- */
-export function playTimeEndedBeep(): void {
-  // Fast double beep pattern for urgency
-  playBeep(1200, 150, 0.4);
-  setTimeout(() => playBeep(1200, 150, 0.4), 200);
-  setTimeout(() => playBeep(1200, 150, 0.4), 400);
+export function playSkip(): void {
+  tone({ frequency: 520, duration: 0.09, type: 'square', volume: 0.16 });
+  tone({ frequency: 380, duration: 0.12, type: 'square', volume: 0.16, delay: 0.08 });
+}
+
+export function playFoul(): void {
+  tone({ frequency: 200, duration: 0.22, type: 'sawtooth', volume: 0.2 });
+  tone({ frequency: 150, duration: 0.28, type: 'sawtooth', volume: 0.2, delay: 0.16 });
+}
+
+export function playTimeUp(): void {
+  [0, 0.22, 0.44].forEach((delay) => {
+    tone({ frequency: 1046, duration: 0.16, volume: 0.3, delay });
+  });
+}
+
+export function playTick(): void {
+  tone({ frequency: 1400, duration: 0.035, volume: 0.12, type: 'square' });
+}
+
+export function playFanfare(): void {
+  [523, 659, 784, 1046].forEach((frequency, index) => {
+    tone({ frequency, duration: 0.28, volume: 0.24, type: 'triangle', delay: index * 0.13 });
+  });
+}
+
+/** Haptics are independent of the mute switch - muting silences audio only. */
+export function vibrate(pattern: number | number[]): void {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
 }

@@ -1,413 +1,398 @@
-import type { GameContext, GameAction, Team, Player } from '../types/index';
-import { getRandomWord } from '../data/wordLoader';
+import type {
+  GameAction,
+  GameContext,
+  Player,
+  StartGamePayload,
+  Team,
+  TeamDraft,
+} from '../types/index';
+import { pickWord } from '../data/wordLoader';
 
-type InitializePayload = {
-  mode: 'MULTI_PHONE' | 'SINGLE_PHONE';
-  teamNames?: string[];
-  playerNames?: string[];
-  timerDuration: number;
-  requireReadyAfterPass?: boolean;
-  allWords: string[];
+/** Changing the word costs a point, breaking a rule costs three. */
+export const SKIP_PENALTY = 1;
+export const FOUL_PENALTY = 3;
+
+export const TEAM_COLOR_COUNT = 8;
+
+interface TurnTally {
+  correct: number;
+  skipped: number;
+  fouls: number;
+  points: number;
+  bestStreak: number;
+}
+
+const emptyTally: TurnTally = { correct: 0, skipped: 0, fouls: 0, points: 0, bestStreak: 0 };
+
+export interface GameState extends GameContext {
+  turnTally: TurnTally;
+}
+
+export const initialGameState: GameState = {
+  phase: 'LOBBY',
+  mode: 'ROUNDS',
+  wordLanguage: 'en',
+  teams: [],
+  players: [],
+  activeTeamIndex: 0,
+  roundCount: 3,
+  currentRound: 1,
+  turnDuration: 60,
+  requireReadyAfterPass: true,
+  currentWord: null,
+  usedWords: [],
+  wordPool: [],
+  turnKey: 0,
+  lastTurn: null,
+  winnerTeamIds: [],
+  turnTally: emptyTally,
 };
 
-type TimedActionPayload = {
-  timeRemaining?: number;
-};
-
-function createTeam(name: string, index: number, timerDuration?: number): Team {
-  return {
-    id: `team-${index + 1}`,
-    name,
-    score: 0,
-    streak: 0,
-    bestStreak: 0,
-    remainingTime: timerDuration,
-    eliminated: false,
-    memberIds: [],
-  };
-}
-
-function getNextWord(state: GameContext): string {
-  const word = getRandomWord(state.allWords, state.usedWords);
-  state.usedWords.add(word);
-  return word;
-}
-
-function getSingleModeTeam(state: GameContext): Team | null {
-  const player = state.players[state.currentPlayerIndex];
-  if (!player) return null;
-  return state.teams.find((team) => team.id === player.teamId) ?? null;
-}
-
-function updateSingleModeTeamTime(state: GameContext, payload?: TimedActionPayload): Team[] {
-  const activeTeam = getSingleModeTeam(state);
-  if (!activeTeam) return state.teams;
-
-  const remainingTime = Math.max(0, payload?.timeRemaining ?? activeTeam.remainingTime ?? state.timerDuration);
-  return state.teams.map((team) => (
-    team.id === activeTeam.id ? { ...team, remainingTime } : team
-  ));
-}
-
-function findNextAlivePlayerIndex(state: GameContext, fromIndex: number, teams: Team[]): number {
-  const teamById = new Map(teams.map((team) => [team.id, team]));
-  const totalPlayers = state.players.length;
-
-  for (let offset = 1; offset <= totalPlayers; offset += 1) {
-    const candidateIndex = (fromIndex + offset) % totalPlayers;
-    const candidate = state.players[candidateIndex];
-    if (!candidate) continue;
-    const candidateTeam = teamById.get(candidate.teamId);
-    if (candidateTeam && !candidateTeam.eliminated) {
-      return candidateIndex;
-    }
-  }
-
-  return fromIndex;
-}
-
-function buildSinglePhoneTeams(playerNames: string[], timerDuration: number): { teams: Team[]; players: Player[] } {
-  const cleanNames = playerNames
-    .map((name) => name.trim())
-    .filter((name) => name.length > 0);
-
-  const half = cleanNames.length / 2;
+function buildRoster(drafts: TeamDraft[], turnDuration: number) {
   const teams: Team[] = [];
   const players: Player[] = [];
 
-  for (let i = 0; i < half; i += 1) {
-    const firstPlayerId = `player-${i + 1}`;
-    const secondPlayerId = `player-${i + half + 1}`;
-    const teamId = `team-${i + 1}`;
-    const firstName = cleanNames[i];
-    const secondName = cleanNames[i + half];
+  drafts.forEach((draft, index) => {
+    const teamId = `team-${index + 1}`;
+    const names = draft.playerNames.map((name) => name.trim()).filter(Boolean);
+    const playerIds = names.map((_, memberIndex) => `${teamId}-p${memberIndex + 1}`);
+
+    names.forEach((name, memberIndex) => {
+      players.push({ id: playerIds[memberIndex], name, teamId });
+    });
 
     teams.push({
       id: teamId,
-      name: `${firstName} & ${secondName}`,
+      name: names.join(' & '),
+      colorIndex: index % TEAM_COLOR_COUNT,
+      playerIds,
       score: 0,
+      correct: 0,
+      skipped: 0,
+      fouls: 0,
       streak: 0,
       bestStreak: 0,
-      remainingTime: timerDuration,
+      timeUsed: 0,
+      remainingTime: turnDuration,
       eliminated: false,
-      memberIds: [firstPlayerId, secondPlayerId],
+      turnsTaken: 0,
     });
-
-    players.push({
-      id: firstPlayerId,
-      name: firstName,
-      teamId,
-    });
-  }
-
-  for (let i = half; i < cleanNames.length; i += 1) {
-    const playerId = `player-${i + 1}`;
-    const teamId = `team-${i - half + 1}`;
-    players.push({
-      id: playerId,
-      name: cleanNames[i],
-      teamId,
-    });
-  }
+  });
 
   return { teams, players };
 }
 
-function getPassBehavior(requireReadyAfterPass: boolean) {
-  if (requireReadyAfterPass) {
-    return {
-      isPaused: true,
-      pauseReason: 'PASS_PHONE' as const,
-    };
+/** The player holding the phone, and the teammate doing the guessing. */
+export function getTurnRoles(state: GameContext, team: Team | null) {
+  if (!team || team.playerIds.length === 0) {
+    return { describer: null, guesser: null };
   }
-
+  const byId = new Map(state.players.map((player) => [player.id, player]));
+  // turnsTaken is incremented as a turn opens, so the first turn is index 0.
+  const size = team.playerIds.length;
+  const describerIndex = (Math.max(1, team.turnsTaken) - 1) % size;
+  const guesserIndex = (describerIndex + 1) % size;
   return {
-    isPaused: false,
-    pauseReason: null,
+    describer: byId.get(team.playerIds[describerIndex]) ?? null,
+    guesser: byId.get(team.playerIds[guesserIndex]) ?? null,
   };
 }
 
-export function gameReducer(state: GameContext, action: GameAction): GameContext {
-  switch (action.type) {
-    case 'INITIALIZE_GAME': {
-      const payload = action.payload as InitializePayload;
-      const allWords = payload.allWords;
-      const usedWords = new Set<string>();
-      const currentWord = getRandomWord(allWords, usedWords);
-      usedWords.add(currentWord);
+export function getActiveTeam(state: GameContext): Team | null {
+  return state.teams[state.activeTeamIndex] ?? null;
+}
 
-      if (payload.mode === 'SINGLE_PHONE') {
-        const { teams, players } = buildSinglePhoneTeams(payload.playerNames ?? [], payload.timerDuration);
-        return {
-          state: 'IN_GAME',
-          mode: 'SINGLE_PHONE',
-          requireReadyAfterPass: payload.requireReadyAfterPass ?? true,
-          teams,
-          currentTeamIndex: 0,
-          players,
-          currentPlayerIndex: 0,
-          turnResetKey: 0,
-          timerDuration: payload.timerDuration,
-          currentWord,
-          usedWords,
-          allWords,
-          isPaused: false,
-          pauseReason: null,
-          winnerTeamId: null,
-        };
-      }
+function nextAliveTeamIndex(teams: Team[], fromIndex: number): number {
+  for (let offset = 1; offset <= teams.length; offset += 1) {
+    const candidate = (fromIndex + offset) % teams.length;
+    if (!teams[candidate].eliminated) return candidate;
+  }
+  return fromIndex;
+}
 
-      const teams = (payload.teamNames ?? ['Team 1']).map((teamName, index) => createTeam(teamName, index));
-      return {
-        state: 'IN_GAME',
-        mode: 'MULTI_PHONE',
-        requireReadyAfterPass: true,
-        teams,
-        currentTeamIndex: 0,
-        players: [],
-        currentPlayerIndex: 0,
-        turnResetKey: 0,
-        timerDuration: payload.timerDuration,
-        currentWord,
-        usedWords,
-        allWords,
-        isPaused: false,
-        pauseReason: null,
-        winnerTeamId: null,
-      };
-    }
+function computeWinners(teams: Team[], mode: GameContext['mode']): string[] {
+  if (teams.length === 0) return [];
 
-    case 'NEXT_WORD': {
-      if (state.state !== 'IN_GAME') {
-        return state;
-      }
+  if (mode === 'RELAY') {
+    const alive = teams.filter((team) => !team.eliminated);
+    const pool = alive.length > 0 ? alive : teams;
+    const best = Math.max(...pool.map((team) => team.remainingTime));
+    return pool.filter((team) => team.remainingTime === best).map((team) => team.id);
+  }
 
-      if (state.mode === 'SINGLE_PHONE') {
-        const payload = action.payload as TimedActionPayload | undefined;
-        const teamsWithUpdatedTime = updateSingleModeTeamTime(state, payload);
-        const player = state.players[state.currentPlayerIndex];
-        if (!player) return state;
-        const currentTeam = teamsWithUpdatedTime.find((team) => team.id === player.teamId);
-        if (!currentTeam || currentTeam.eliminated) return state;
+  const best = Math.max(...teams.map((team) => team.score));
+  const leaders = teams.filter((team) => team.score === best);
+  if (leaders.length === 1) return leaders.map((team) => team.id);
 
-        const newStreak = (currentTeam.streak ?? 0) + 1;
-        const bestStreak = Math.max(currentTeam.bestStreak ?? 0, newStreak);
-        const teams = teamsWithUpdatedTime.map((team) => (
-          team.id === currentTeam.id
-            ? {
-                ...team,
-                score: team.score + 1,
-                streak: newStreak,
-                bestStreak,
-              }
-            : team
-        ));
-        const nextPlayerIndex = findNextAlivePlayerIndex(state, state.currentPlayerIndex, teams);
-        const passBehavior = getPassBehavior(state.requireReadyAfterPass);
+  // Tie-break on raw correct guesses, then on the fewest fouls.
+  const mostCorrect = Math.max(...leaders.map((team) => team.correct));
+  const byCorrect = leaders.filter((team) => team.correct === mostCorrect);
+  if (byCorrect.length === 1) return byCorrect.map((team) => team.id);
 
-        return {
-          ...state,
-          teams,
-          currentPlayerIndex: nextPlayerIndex,
-          currentWord: getNextWord(state),
-          isPaused: passBehavior.isPaused,
-          pauseReason: passBehavior.pauseReason,
-          turnResetKey: state.turnResetKey + 1,
-        };
-      }
+  const fewestFouls = Math.min(...byCorrect.map((team) => team.fouls));
+  return byCorrect.filter((team) => team.fouls === fewestFouls).map((team) => team.id);
+}
 
-      const currentTeam = state.teams[state.currentTeamIndex];
-      if (!currentTeam) {
-        return state;
-      }
+/**
+ * SPRINT: the turn is a single word, so it closes the moment the word is
+ * answered or the clock runs out - the phone travels on with no summary screen
+ * in between. `timeRemaining` is what was left on the word's clock.
+ */
+function advanceSprint(state: GameState, timeRemaining: number, missed: boolean): GameState {
+  const activeTeam = getActiveTeam(state);
+  const spent = Math.max(0, state.turnDuration - Math.max(0, timeRemaining));
 
-      const newStreak = (currentTeam.streak ?? 0) + 1;
-      const bestStreak = Math.max(currentTeam.bestStreak ?? 0, newStreak);
-      const updatedTeam = {
-        ...currentTeam,
-        score: currentTeam.score + 1,
-        streak: newStreak,
-        bestStreak,
-      };
-      const teams = state.teams.map((team, index) => (
-        index === state.currentTeamIndex ? updatedTeam : team
-      ));
+  const teams = activeTeam
+    ? state.teams.map((team) => (
+        team.id === activeTeam.id
+          ? { ...team, timeUsed: team.timeUsed + spent, streak: missed ? 0 : team.streak }
+          : team
+      ))
+    : state.teams;
 
-      return {
-        ...state,
-        teams,
-        currentWord: getNextWord(state),
-        isPaused: true,
-        pauseReason: 'NEXT_WORD',
-      };
-    }
+  const banked: GameState = { ...state, teams };
 
-    case 'SKIP_WORD': {
-      if (state.state !== 'IN_GAME') {
-        return state;
-      }
+  const isLastTeamOfRound = banked.activeTeamIndex >= banked.teams.length - 1;
+  const nextRound = isLastTeamOfRound ? banked.currentRound + 1 : banked.currentRound;
 
-      if (state.mode === 'SINGLE_PHONE') {
-        const payload = action.payload as TimedActionPayload | undefined;
-        const teamsWithUpdatedTime = updateSingleModeTeamTime(state, payload);
-        const player = state.players[state.currentPlayerIndex];
-        if (!player) return state;
-        const teams = teamsWithUpdatedTime.map((team) => (
-          team.id === player.teamId ? { ...team, streak: 0 } : team
-        ));
-        const nextPlayerIndex = findNextAlivePlayerIndex(state, state.currentPlayerIndex, teams);
-        const passBehavior = getPassBehavior(state.requireReadyAfterPass);
+  if (nextRound > banked.roundCount) {
+    return {
+      ...banked,
+      phase: 'GAME_OVER',
+      currentWord: null,
+      winnerTeamIds: computeWinners(banked.teams, 'SPRINT'),
+    };
+  }
 
-        return {
-          ...state,
-          teams,
-          currentPlayerIndex: nextPlayerIndex,
-          currentWord: getNextWord(state),
-          isPaused: passBehavior.isPaused,
-          pauseReason: passBehavior.pauseReason,
-          turnResetKey: state.turnResetKey + 1,
-        };
-      }
+  const nextIndex = isLastTeamOfRound ? 0 : banked.activeTeamIndex + 1;
+  return enterTurn(banked, { activeTeamIndex: nextIndex, currentRound: nextRound });
+}
 
-      const currentTeam = state.teams[state.currentTeamIndex];
-      if (!currentTeam) {
-        return state;
-      }
+/** Moves the game into a team's turn, showing the hand-off screen when asked. */
+function enterTurn(
+  state: GameState,
+  options: { activeTeamIndex: number; currentRound: number }
+): GameState {
+  const withTurnCount = state.teams.map((team, index) => (
+    index === options.activeTeamIndex ? { ...team, turnsTaken: team.turnsTaken + 1 } : team
+  ));
 
-      const updatedTeam = {
-        ...currentTeam,
-        streak: 0,
-      };
-      const teams = state.teams.map((team, index) => (
-        index === state.currentTeamIndex ? updatedTeam : team
-      ));
+  const needsHandoff = state.mode === 'ROUNDS' ? true : state.requireReadyAfterPass;
 
-      return {
-        ...state,
-        teams,
-        currentWord: getNextWord(state),
-        isPaused: true,
-        pauseReason: 'NEXT_WORD',
-      };
-    }
+  const base: GameState = {
+    ...state,
+    teams: withTurnCount,
+    activeTeamIndex: options.activeTeamIndex,
+    currentRound: options.currentRound,
+    turnKey: state.turnKey + 1,
+    turnTally: emptyTally,
+    lastTurn: null,
+  };
 
-    case 'PAUSE_GAME': {
-      if (state.state !== 'IN_GAME') {
-        return state;
-      }
+  if (needsHandoff) {
+    return { ...base, phase: 'TURN_INTRO', currentWord: null };
+  }
 
-      return {
-        ...state,
-        isPaused: true,
-        pauseReason: state.pauseReason ?? 'NEXT_WORD',
-      };
-    }
+  const { word, used } = pickWord(state.wordPool, state.usedWords);
+  return { ...base, phase: 'PLAYING', currentWord: word, usedWords: used };
+}
 
-    case 'RESUME_GAME': {
-      if (state.state !== 'IN_GAME') {
-        return state;
-      }
+/** Applies a scoring event to the active team and deals a fresh word. */
+function scoreAndDeal(
+  state: GameState,
+  change: { points: number; correct?: boolean; skipped?: boolean; foul?: boolean }
+): GameState {
+  const activeTeam = getActiveTeam(state);
+  if (!activeTeam) return state;
 
-      return {
-        ...state,
-        isPaused: false,
-        pauseReason: null,
-      };
-    }
+  const streak = change.correct ? activeTeam.streak + 1 : 0;
+  const bestStreak = Math.max(activeTeam.bestStreak, streak);
 
-    case 'TIMER_ENDED': {
-      if (state.state !== 'IN_GAME') {
-        return state;
-      }
-
-      if (state.mode === 'MULTI_PHONE') {
-        return {
-          ...state,
-          state: 'GAME_OVER',
-        };
-      }
-
-      const player = state.players[state.currentPlayerIndex];
-      if (!player) {
-        return {
-          ...state,
-          state: 'GAME_OVER',
-        };
-      }
-
-      const teams = state.teams.map((team) => {
-        if (team.id !== player.teamId) return team;
-        return {
+  const teams = state.teams.map((team) => (
+    team.id === activeTeam.id
+      ? {
           ...team,
-          remainingTime: 0,
-          eliminated: true,
-          streak: 0,
-        };
-      });
+          score: team.score + change.points,
+          correct: team.correct + (change.correct ? 1 : 0),
+          skipped: team.skipped + (change.skipped ? 1 : 0),
+          fouls: team.fouls + (change.foul ? 1 : 0),
+          streak,
+          bestStreak,
+        }
+      : team
+  ));
 
-      const aliveTeams = teams.filter((team) => !team.eliminated);
-      if (aliveTeams.length <= 1) {
-        return {
-          ...state,
-          teams,
-          state: 'GAME_OVER',
-          winnerTeamId: aliveTeams[0]?.id ?? null,
-        };
+  const { word, used } = pickWord(state.wordPool, state.usedWords);
+
+  return {
+    ...state,
+    teams,
+    currentWord: word,
+    usedWords: used,
+    turnTally: {
+      correct: state.turnTally.correct + (change.correct ? 1 : 0),
+      skipped: state.turnTally.skipped + (change.skipped ? 1 : 0),
+      fouls: state.turnTally.fouls + (change.foul ? 1 : 0),
+      points: state.turnTally.points + change.points,
+      bestStreak: Math.max(state.turnTally.bestStreak, streak),
+    },
+  };
+}
+
+/** RELAY keeps a running bank of time per team; write the clock back onto it. */
+function syncClock(state: GameState, timeRemaining: number): GameState {
+  if (state.mode !== 'RELAY') return state;
+
+  const activeTeam = getActiveTeam(state);
+  if (!activeTeam) return state;
+
+  const remaining = Math.max(0, timeRemaining);
+  const teams = state.teams.map((team) => (
+    team.id === activeTeam.id
+      ? { ...team, remainingTime: remaining, timeUsed: state.turnDuration - remaining }
+      : team
+  ));
+
+  return { ...state, teams };
+}
+
+function finishTurn(state: GameState, timeRemaining: number, eliminated: boolean): GameState {
+  const synced = syncClock(state, timeRemaining);
+  const activeTeam = getActiveTeam(synced);
+  if (!activeTeam) return synced;
+
+  const teams = synced.teams.map((team) => {
+    if (team.id !== activeTeam.id) return team;
+    if (synced.mode === 'RELAY') {
+      return {
+        ...team,
+        eliminated: team.eliminated || eliminated,
+        remainingTime: eliminated ? 0 : team.remainingTime,
+        streak: eliminated ? 0 : team.streak,
+      };
+    }
+    // ROUNDS: the turn always burns the whole clock, then it is handed back full.
+    return {
+      ...team,
+      timeUsed: team.timeUsed + (synced.turnDuration - Math.max(0, timeRemaining)),
+      remainingTime: synced.turnDuration,
+      streak: 0,
+    };
+  });
+
+  return {
+    ...synced,
+    teams,
+    phase: 'TURN_SUMMARY',
+    currentWord: null,
+    lastTurn: {
+      teamId: activeTeam.id,
+      correct: synced.turnTally.correct,
+      skipped: synced.turnTally.skipped,
+      fouls: synced.turnTally.fouls,
+      points: synced.turnTally.points,
+      bestStreak: synced.turnTally.bestStreak,
+      eliminated,
+    },
+  };
+}
+
+export function gameReducer(state: GameState, action: GameAction): GameState {
+  switch (action.type) {
+    case 'START_GAME': {
+      const payload = action.payload as StartGamePayload;
+      const { teams, players } = buildRoster(payload.teamDrafts, payload.turnDuration);
+      if (teams.length < 2) return state;
+
+      const base: GameState = {
+        ...initialGameState,
+        phase: 'TURN_INTRO',
+        mode: payload.mode,
+        wordLanguage: payload.wordLanguage,
+        teams,
+        players,
+        roundCount: payload.roundCount,
+        currentRound: 1,
+        turnDuration: payload.turnDuration,
+        requireReadyAfterPass: payload.requireReadyAfterPass,
+        wordPool: payload.wordPool,
+        usedWords: [],
+        turnKey: 0,
+      };
+
+      return enterTurn(base, { activeTeamIndex: 0, currentRound: 1 });
+    }
+
+    case 'BEGIN_TURN': {
+      if (state.phase !== 'TURN_INTRO') return state;
+      const { word, used } = pickWord(state.wordPool, state.usedWords);
+      return { ...state, phase: 'PLAYING', currentWord: word, usedWords: used };
+    }
+
+    case 'CORRECT': {
+      if (state.phase !== 'PLAYING') return state;
+      const scored = scoreAndDeal(state, { points: 1, correct: true });
+
+      if (state.mode === 'ROUNDS') {
+        return scored;
       }
 
-      const nextPlayerIndex = findNextAlivePlayerIndex(state, state.currentPlayerIndex, teams);
-      const passBehavior = getPassBehavior(state.requireReadyAfterPass);
-      return {
-        ...state,
-        teams,
-        currentPlayerIndex: nextPlayerIndex,
-        currentWord: getNextWord(state),
-        isPaused: passBehavior.isPaused,
-        pauseReason: passBehavior.pauseReason,
-        turnResetKey: state.turnResetKey + 1,
-        winnerTeamId: null,
-      };
+      // SPRINT: one word per turn - the phone moves on the instant it lands.
+      if (state.mode === 'SPRINT') {
+        return advanceSprint(scored, action.payload.timeRemaining, false);
+      }
+
+      // RELAY: a correct guess ends the turn and the phone travels on.
+      const synced = syncClock(scored, action.payload.timeRemaining);
+      const nextIndex = nextAliveTeamIndex(synced.teams, synced.activeTeamIndex);
+      return enterTurn(synced, { activeTeamIndex: nextIndex, currentRound: synced.currentRound });
     }
 
-    case 'RESTART_GAME': {
-      return {
-        state: 'LOBBY',
-        mode: 'MULTI_PHONE',
-        requireReadyAfterPass: true,
-        teams: [],
-        currentTeamIndex: 0,
-        players: [],
-        currentPlayerIndex: 0,
-        turnResetKey: 0,
-        timerDuration: 60,
-        currentWord: null,
-        usedWords: new Set<string>(),
-        allWords: [],
-        isPaused: false,
-        pauseReason: null,
-        winnerTeamId: null,
-      };
+    case 'SKIP': {
+      if (state.phase !== 'PLAYING') return state;
+      return scoreAndDeal(state, { points: -SKIP_PENALTY, skipped: true });
     }
+
+    case 'FOUL': {
+      if (state.phase !== 'PLAYING') return state;
+      return scoreAndDeal(state, { points: -FOUL_PENALTY, foul: true });
+    }
+
+    case 'TURN_ENDED': {
+      if (state.phase !== 'PLAYING') return state;
+      // SPRINT never stops on a summary: a missed word just passes the phone.
+      if (state.mode === 'SPRINT') {
+        return advanceSprint(state, 0, true);
+      }
+      return finishTurn(state, 0, state.mode === 'RELAY');
+    }
+
+    case 'ADVANCE': {
+      if (state.phase !== 'TURN_SUMMARY') return state;
+
+      if (state.mode === 'RELAY') {
+        const alive = state.teams.filter((team) => !team.eliminated);
+        if (alive.length <= 1) {
+          return { ...state, phase: 'GAME_OVER', winnerTeamIds: computeWinners(state.teams, 'RELAY') };
+        }
+        const nextIndex = nextAliveTeamIndex(state.teams, state.activeTeamIndex);
+        return enterTurn(state, { activeTeamIndex: nextIndex, currentRound: state.currentRound });
+      }
+
+      const isLastTeamOfRound = state.activeTeamIndex >= state.teams.length - 1;
+      const nextRound = isLastTeamOfRound ? state.currentRound + 1 : state.currentRound;
+      if (nextRound > state.roundCount) {
+        return { ...state, phase: 'GAME_OVER', winnerTeamIds: computeWinners(state.teams, 'ROUNDS') };
+      }
+
+      const nextIndex = isLastTeamOfRound ? 0 : state.activeTeamIndex + 1;
+      return enterTurn(state, { activeTeamIndex: nextIndex, currentRound: nextRound });
+    }
+
+    case 'RESET':
+      return { ...initialGameState };
 
     default:
       return state;
   }
 }
-
-export const initialGameState: GameContext = {
-  state: 'LOBBY',
-  mode: 'MULTI_PHONE',
-  requireReadyAfterPass: true,
-  teams: [],
-  currentTeamIndex: 0,
-  players: [],
-  currentPlayerIndex: 0,
-  turnResetKey: 0,
-  timerDuration: 60,
-  currentWord: null,
-  usedWords: new Set<string>(),
-  allWords: [],
-  isPaused: false,
-  pauseReason: null,
-  winnerTeamId: null,
-};

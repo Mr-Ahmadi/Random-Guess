@@ -1,65 +1,51 @@
-export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const sizeMap = {
-    sm: { width: '32', height: '32' },
-    md: { width: '48', height: '48' },
-    lg: { width: '64', height: '64' },
-  };
+type LogoProps = {
+  size?: number;
+  className?: string;
+};
 
-  const dimensions = sizeMap[size];
-
+/**
+ * "Dowr" means a turn / a lap - the mark is a lap of the circle handing the
+ * word from one player to the next.
+ */
+export function Logo({ size = 44, className }: LogoProps) {
   return (
     <svg
+      className={className}
+      width={size}
+      height={size}
       viewBox="0 0 100 100"
-      width={dimensions.width}
-      height={dimensions.height}
       fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="logo"
+      role="img"
+      aria-hidden="true"
     >
-      {/* Gradient definitions */}
       <defs>
-        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f97316" />
-          <stop offset="100%" stopColor="#ea580c" />
+        <linearGradient id="dowrWarm" x1="10%" y1="0%" x2="90%" y2="100%">
+          <stop offset="0%" stopColor="#fdba74" />
+          <stop offset="100%" stopColor="#f97316" />
         </linearGradient>
-        <linearGradient id="accentGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#14b8a6" />
-          <stop offset="100%" stopColor="#0f766e" />
+        <linearGradient id="dowrCool" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#2dd4bf" />
+          <stop offset="100%" stopColor="#a78bfa" />
         </linearGradient>
       </defs>
 
-      {/* Background circle */}
-      <circle cx="50" cy="50" r="48" fill="url(#logoGradient)" opacity="0.1" />
+      <circle cx="50" cy="50" r="46" fill="url(#dowrWarm)" opacity="0.12" />
 
-      {/* Outer ring */}
-      <circle
-        cx="50"
-        cy="50"
-        r="42"
-        fill="none"
-        stroke="url(#logoGradient)"
-        strokeWidth="2"
-      />
-
-      {/* Question mark design */}
+      {/* the lap */}
       <path
-        d="M 50 25 Q 60 25 65 32 Q 68 37 65 42 Q 62 45 58 43"
-        fill="none"
-        stroke="url(#logoGradient)"
-        strokeWidth="3.5"
+        d="M78 38a32 32 0 1 1-13-14"
+        stroke="url(#dowrWarm)"
+        strokeWidth="9"
         strokeLinecap="round"
-        strokeLinejoin="round"
+        fill="none"
       />
+      <path d="M62 12l18 8-9 17z" fill="url(#dowrWarm)" />
 
-      {/* Question mark dot */}
-      <circle cx="50" cy="62" r="2.5" fill="url(#logoGradient)" />
-
-      {/* Target rings for "guessing" concept */}
-      <circle cx="50" cy="50" r="28" fill="none" stroke="url(#accentGradient)" strokeWidth="1.5" opacity="0.6" />
-      <circle cx="50" cy="50" r="20" fill="none" stroke="url(#accentGradient)" strokeWidth="1.5" opacity="0.4" />
-
-      {/* Center dot */}
-      <circle cx="50" cy="50" r="3" fill="url(#logoGradient)" />
+      {/* the word being passed */}
+      <circle cx="50" cy="50" r="17" fill="url(#dowrCool)" opacity="0.22" />
+      <circle cx="40" cy="50" r="4.4" fill="url(#dowrCool)" />
+      <circle cx="50" cy="50" r="4.4" fill="url(#dowrCool)" />
+      <circle cx="60" cy="50" r="4.4" fill="url(#dowrCool)" />
     </svg>
   );
 }

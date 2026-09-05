@@ -1,61 +1,62 @@
 import { useEffect, useRef, useState } from 'react';
 
-type UseGameTimerProps = {
+type UseGameTimerOptions = {
+  /** Seconds on the clock when the turn starts. Read once per mount. */
   duration: number;
   isActive: boolean;
-  onTimerEnd: () => void;
+  onEnd: () => void;
 };
 
-export function useGameTimer({ duration, isActive, onTimerEnd }: UseGameTimerProps) {
-  const [timeRemaining, setTimeRemaining] = useState(duration);
-  const animationFrameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(0);
-  const wasActivePrevRef = useRef<boolean>(isActive);
+/**
+ * A wall-clock countdown driven by requestAnimationFrame.
+ *
+ * The duration is captured when the hook mounts: a turn owns its clock, so the
+ * component that hosts the timer is remounted (keyed on the turn) whenever a
+ * new turn begins. Pausing keeps whatever is left on the clock.
+ */
+export function useGameTimer({ duration, isActive, onEnd }: UseGameTimerOptions) {
+  const [remaining, setRemaining] = useState(duration);
+  const remainingRef = useRef(duration);
+  const frameRef = useRef<number | null>(null);
+  const endedRef = useRef(false);
+  const onEndRef = useRef(onEnd);
 
   useEffect(() => {
-    lastTimeRef.current = Date.now();
-  }, []);
+    onEndRef.current = onEnd;
+  }, [onEnd]);
 
   useEffect(() => {
-    if (!isActive) {
-      return;
-    }
+    if (!isActive || endedRef.current) return;
+
+    const startedAt = performance.now();
+    const startRemaining = remainingRef.current;
 
     const tick = () => {
-      const now = Date.now();
-      const elapsed = now - lastTimeRef.current;
-      lastTimeRef.current = now;
+      const elapsed = (performance.now() - startedAt) / 1000;
+      const next = Math.max(0, startRemaining - elapsed);
+      remainingRef.current = next;
+      setRemaining(next);
 
-      setTimeRemaining((prev) => {
-        const newTime = Math.max(0, prev - elapsed / 1000);
-
-        if (newTime <= 0) {
-          onTimerEnd();
-          return 0;
+      if (next <= 0) {
+        if (!endedRef.current) {
+          endedRef.current = true;
+          onEndRef.current();
         }
+        return;
+      }
 
-        return newTime;
-      });
-
-      animationFrameRef.current = requestAnimationFrame(tick);
+      frameRef.current = requestAnimationFrame(tick);
     };
 
-    animationFrameRef.current = requestAnimationFrame(tick);
+    frameRef.current = requestAnimationFrame(tick);
 
     return () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
       }
     };
-  }, [isActive, onTimerEnd]);
-
-  useEffect(() => {
-    // Preserve time remaining when transitioning from paused to active
-    if (isActive && !wasActivePrevRef.current) {
-      lastTimeRef.current = Date.now();
-    }
-    wasActivePrevRef.current = isActive;
   }, [isActive]);
 
-  return timeRemaining;
+  return remaining;
 }

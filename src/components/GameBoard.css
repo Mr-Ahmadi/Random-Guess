@@ -1,474 +1,427 @@
-.gameboard-container {
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  padding: clamp(0.35rem, 1.4vh, 0.9rem);
-  overflow: hidden;
-  background: radial-gradient(circle at top right, #fff7ed 0%, transparent 40%),
-    radial-gradient(circle at bottom left, #f0fdfa 0%, transparent 40%),
-    var(--bg);
-  animation: boardFadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes boardFadeIn {
-  from {
-    opacity: 0;
-    filter: blur(10px);
-  }
-
-  to {
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-
-.gameboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: min(720px, 100%);
-  margin: 0 auto clamp(0.3rem, 1vh, 0.7rem);
-  z-index: 10;
-}
-
-.header-controls {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.icon-button {
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: clamp(0.5rem, 1.2vh, 0.72rem);
-  color: var(--ink-soft);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.icon-button:hover {
-  transform: translateY(-2px);
-  background: white;
-  color: var(--primary);
-  box-shadow: var(--shadow-md);
-}
-
-.team-info {
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  padding: clamp(0.38rem, 1vh, 0.6rem) clamp(0.75rem, 2.6vw, 1.15rem);
-  box-shadow: var(--shadow-md);
-  text-align: center;
-}
-
-.team-score {
-  font-weight: 800;
-  font-size: clamp(0.75rem, 1.8vh, 0.9rem);
-  color: var(--ink);
-  letter-spacing: -0.02em;
-}
-
-.gameboard-content {
-  width: min(720px, 100%);
-  margin: 0 auto;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: clamp(0.4rem, 1.5vh, 1rem);
-  overflow: hidden;
-  /* Important for no-scroll */
-}
-
-.timer-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(0.25rem, 0.8vh, 0.65rem);
-}
-
-.timer-display {
-  width: clamp(112px, 22vh, 200px);
-  height: clamp(112px, 22vh, 200px);
+.gameboard {
   position: relative;
+  gap: 0.7rem;
+}
+
+/* ---------- Head ---------- */
+.board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.board-head-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.board-head-center .team-tag {
+  max-width: 58vw;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.round-pill {
+  padding: 0.28rem 0.75rem;
+  border-radius: 99px;
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.round-pill.small {
+  font-size: 0.7rem;
+  padding: 0.18rem 0.6rem;
+}
+
+.board-roles {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-  border-radius: 50%;
-  box-shadow: var(--shadow-lg), inset 0 0 20px rgba(0, 0, 0, 0.02);
-  padding: 10px;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
 }
 
-.timer-svg {
+.board-roles strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.board-roles span {
+  color: var(--team-color);
+  font-size: 1rem;
+}
+
+html[dir='rtl'] .board-roles span {
+  transform: scaleX(-1);
+}
+
+/* ---------- Timer ---------- */
+.timer-wrap {
+  position: relative;
+  flex: none;
+  width: min(46vw, 190px);
+  aspect-ratio: 1;
+  margin: 0.1rem auto 0;
+  display: grid;
+  place-items: center;
+}
+
+.timer-ring {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   transform: rotate(-90deg);
 }
 
-.timer-circle-bg {
-  fill: none;
-  stroke: #f1f5f9;
-  stroke-width: 8;
+html[dir='rtl'] .timer-ring {
+  transform: rotate(-90deg) scaleY(-1);
 }
 
-.timer-circle-progress {
+.ring-track {
   fill: none;
-  stroke: var(--primary);
-  stroke-width: 8;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 12;
+}
+
+.ring-progress {
+  fill: none;
+  stroke: var(--team-color, var(--accent));
+  stroke-width: 12;
   stroke-linecap: round;
-  transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--team-color) 45%, transparent));
+  transition: stroke 0.3s var(--ease);
 }
 
-.timer-display.low-time .timer-circle-progress {
+.low-time .ring-progress {
   stroke: var(--danger);
-  animation: timerPulse 0.5s ease infinite alternate;
+  filter: drop-shadow(0 0 12px rgba(251, 113, 133, 0.6));
 }
 
-@keyframes timerPulse {
-  from {
-    filter: drop-shadow(0 0 2px var(--danger));
-  }
-
-  to {
-    filter: drop-shadow(0 0 10px var(--danger));
-  }
-}
-
-.timer-text {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(1.8rem, 6.2vh, 3.4rem);
-  font-weight: 800;
-  color: var(--ink);
-  letter-spacing: -0.05em;
-  z-index: 1;
-}
-
-.team-streak-badge {
-  background: white;
-  padding: 0.36rem 0.8rem;
-  border-radius: 20px;
-  box-shadow: var(--shadow-md);
-  font-weight: 800;
-  font-size: clamp(0.85rem, 2.4vh, 1rem);
-  border: 2px solid #fed7aa;
-  animation: streakPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes streakPop {
-  0% {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.word-section {
-  flex: 0.9;
+.timer-inner {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  max-height: 24vh;
+  gap: 0.1rem;
 }
 
-.word-card {
-  width: 100%;
-  background: white;
-  border-radius: clamp(16px, 2.4vh, 28px);
-  padding: clamp(0.65rem, 1.7vh, 1.3rem);
-  text-align: center;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid rgba(0, 0, 0, 0.02);
-  min-height: clamp(82px, 13vh, 140px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.word-display {
-  font-size: clamp(1.4rem, 5.4vh, 3rem);
+.timer-value {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 9vw, 2.7rem);
   font-weight: 800;
-  color: var(--ink);
   letter-spacing: -0.02em;
-  line-height: 1.1;
-  animation: wordSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes wordSlideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Stunning Pass Phone Screen */
-.pass-phone-overlay {
-  position: absolute;
-  inset: 0;
-  background: var(--glass-bg);
-  backdrop-filter: blur(25px) saturate(200%);
-  -webkit-backdrop-filter: blur(25px) saturate(200%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 2rem;
-  text-align: center;
-  animation: overlayFadeIn 0.4s ease;
-}
-
-@keyframes overlayFadeIn {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0);
-  }
-
-  to {
-    opacity: 1;
-    backdrop-filter: blur(25px);
-  }
-}
-
-.pass-phone-title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3em;
-  color: var(--ink-soft);
-  margin-bottom: 1rem;
-}
-
-.pass-phone-player {
-  font-size: clamp(2.5rem, 8vw, 4.5rem);
-  font-weight: 900;
-  color: var(--ink);
-  letter-spacing: -0.04em;
-  margin-bottom: 2rem;
   line-height: 1;
-  background: linear-gradient(135deg, var(--ink), var(--primary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
-.pass-phone-hint {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-glow);
-  padding: 0.75rem 1.5rem;
-  border-radius: 999px;
-  animation: pulseHint 2s infinite;
+.low-time .timer-value {
+  color: var(--danger);
+  animation: pulse 1s var(--ease) infinite;
 }
 
-@keyframes pulseHint {
-
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
+@keyframes pulse {
   50% {
-    opacity: 0.8;
-    transform: scale(1.05);
+    transform: scale(1.07);
   }
 }
 
-.team-clocks-card {
-  background: var(--glass-bg);
-  border-radius: clamp(14px, 1.8vh, 24px);
-  padding: clamp(0.55rem, 1.5vh, 1rem);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+.timer-score {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-dim);
 }
 
-.clocks-title {
+.streak-badge {
+  position: absolute;
+  inset-block-end: -6px;
+  inset-inline: 0;
+  width: fit-content;
+  margin-inline: auto;
+  padding: 0.25rem 0.7rem;
+  border-radius: 99px;
+  background: linear-gradient(135deg, #fb923c, #f43f5e);
+  color: #2a0b02;
   font-size: 0.75rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink-soft);
-  margin-bottom: 0.75rem;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px -12px rgba(251, 146, 60, 0.9);
+  animation: streak-pop 0.4s var(--ease) both;
 }
 
-.clocks-grid {
+@keyframes streak-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.85);
+  }
+}
+
+/* ---------- Word ---------- */
+.word-card {
+  flex: 1;
+  min-height: 110px;
   display: grid;
+  place-items: center;
   gap: 0.5rem;
-  max-height: min(30vh, 260px);
+  padding: 1.1rem 1rem;
+  border-radius: var(--r-xl);
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--team-color) 22%, transparent), rgba(255, 255, 255, 0.03));
+  border: 1px solid color-mix(in srgb, var(--team-color) 30%, transparent);
+  box-shadow: var(--shadow-md);
+  animation: word-in 0.32s var(--ease) both;
+}
+
+@keyframes word-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+.word-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 9.5vw, 3.1rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+html[data-lang='fa'] .word-text {
+  letter-spacing: 0;
+}
+
+/* ---------- Relay clocks ---------- */
+.clocks {
+  flex: none;
+  max-height: 27dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+}
+
+.clocks-head {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 0.4rem;
+}
+
+html[data-lang='fa'] .clocks-head {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.76rem;
+}
+
+.clocks-list {
   overflow-y: auto;
-  padding-right: 4px;
-  min-height: 0;
-}
-
-.clocks-grid::-webkit-scrollbar {
-  width: 4px;
-}
-
-.clocks-grid::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 10px;
-}
-
-.clocks-grid::-webkit-scrollbar-thumb {
-  background: var(--ink-soft);
-  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .clock-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  padding: clamp(0.34rem, 0.95vh, 0.6rem) clamp(0.55rem, 1.7vw, 0.85rem);
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.03);
-  transition: all 0.3s ease;
+  gap: 0.45rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: var(--r-sm);
+  transition: background 0.2s;
 }
 
 .clock-row.active {
-  background: white;
-  border-color: var(--primary);
-  box-shadow: var(--shadow-sm);
-  transform: scale(1.02);
+  background: color-mix(in srgb, var(--team-color) 14%, transparent);
 }
 
-.clock-team-name {
-  font-weight: 700;
-  font-size: clamp(0.72rem, 1.65vh, 0.85rem);
-  color: var(--ink);
+.clock-row.out {
+  opacity: 0.4;
 }
 
-.clock-time-info {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.clock-remaining {
-  font-weight: 800;
-  font-size: clamp(0.74rem, 1.7vh, 0.88rem);
-  color: var(--ink);
-}
-
-.clock-total {
-  font-size: clamp(0.66rem, 1.5vh, 0.75rem);
-  color: var(--ink-soft);
+.clock-name {
+  font-size: 0.82rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.clock-progress-bar {
-  width: 60px;
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 10px;
+.clock-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--team-color);
+}
+
+.clock-bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
-.clock-progress-fill {
+.clock-bar-fill {
+  display: block;
   height: 100%;
-  background: var(--secondary);
-  transition: width 0.3s ease;
+  border-radius: 99px;
+  background: var(--team-color);
+  transition: width 0.25s linear;
 }
 
-.clock-row.active .clock-progress-fill {
-  background: var(--primary);
+/* ---------- Actions ---------- */
+.board-actions {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.game-actions {
+.correct-btn {
+  padding-block: 1.25rem;
+  font-size: 1.2rem;
+}
+
+.secondary-actions {
   display: grid;
-  grid-template-columns: 2fr 1.2fr;
-  gap: clamp(0.45rem, 1.2vh, 0.8rem);
-  padding-bottom: 0;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 
-.btn-game {
-  padding: clamp(0.7rem, 1.85vh, 1.1rem);
-  border-radius: 20px;
-  border: none;
+.secondary-actions .btn {
+  padding: 0.75rem 0.6rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.secondary-actions .cost {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.shortcut-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+  opacity: 0.75;
+}
+
+@media (pointer: coarse) {
+  .shortcut-hint {
+    display: none;
+  }
+}
+
+/* ---------- Feedback flashes ---------- */
+.gameboard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+
+.gameboard.flash-correct::after {
+  background: radial-gradient(circle at 50% 60%, rgba(52, 211, 153, 0.28), transparent 65%);
+  opacity: 1;
+}
+
+.gameboard.flash-skip::after {
+  background: radial-gradient(circle at 50% 60%, rgba(148, 163, 184, 0.22), transparent 65%);
+  opacity: 1;
+}
+
+.gameboard.flash-foul::after {
+  background: radial-gradient(circle at 50% 60%, rgba(244, 63, 94, 0.3), transparent 65%);
+  opacity: 1;
+}
+
+/* ---------- Overlays ---------- */
+.board-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(5, 8, 20, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fade-in 0.2s var(--ease) both;
+}
+
+.overlay-inner {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.overlay-icon {
+  font-size: 2.4rem;
+}
+
+.overlay-inner h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
   font-weight: 800;
-  font-size: clamp(0.82rem, 1.9vh, 0.98rem);
+}
+
+@media (max-height: 700px) {
+  .timer-wrap {
+    width: min(36vw, 150px);
+  }
+
+  .correct-btn {
+    padding-block: 1rem;
+  }
+}
+
+/* ---------- Sprint ---------- */
+/* One word per turn and no hand-off screen, so the board itself has to
+   announce the swap: the whole screen flashes in with the new team colour. */
+.gameboard.sprint {
+  animation: sprint-in 0.42s var(--ease) both;
+}
+
+@keyframes sprint-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.word-flag {
+  padding: 0.2rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  color: color-mix(in srgb, var(--team-color) 70%, #fff);
+  background: color-mix(in srgb, var(--team-color) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--team-color) 34%, transparent);
 }
 
-.btn-got-it {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
-}
-
-.btn-skip {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  box-shadow: 0 10px 20px rgba(239, 68, 68, 0.25);
-}
-
-.btn-ready {
-  grid-column: 1 / -1;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: white;
-  box-shadow: 0 10px 20px var(--primary-glow);
-}
-
-.btn-game:hover {
-  transform: translateY(-4px);
-  filter: brightness(1.1);
-}
-
-.btn-game:active {
-  transform: translateY(0);
-}
-
-@media (max-width: 480px) {
-  .game-actions {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-height: 760px) {
-  .gameboard-container {
-    padding: 0.35rem;
-  }
-
-  .pass-phone-hint {
-    font-size: 0.9rem;
-    padding: 0.55rem 1rem;
-  }
-
-  .clocks-title {
-    margin-bottom: 0.4rem;
-  }
-
-  .clock-progress-bar {
-    width: 44px;
-    height: 5px;
+@media (prefers-reduced-motion: reduce) {
+  .gameboard.sprint {
+    animation: none;
   }
 }

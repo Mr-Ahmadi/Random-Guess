@@ -1,79 +1,115 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
-import type { GameContext } from '../types/index';
+import { useI18n } from '../i18n/useI18n';
+import type { GameState } from '../state/gameReducer';
+import { formatClock } from '../utils/format';
+import { teamColorVar } from '../utils/teamColor';
+import { playFanfare } from '../utils/soundEffects';
 import './GameOver.css';
 
 type GameOverProps = {
-  gameContext: GameContext;
-  onRestartGame: () => void;
+  game: GameState;
+  onPlayAgain: () => void;
+  onBackToLobby: () => void;
 };
 
-export function GameOver({ gameContext, onRestartGame }: GameOverProps) {
-  const isSinglePhoneMode = gameContext.mode === 'SINGLE_PHONE';
-  const team = gameContext.teams[gameContext.currentTeamIndex] ?? null;
-  const rankedTeams = [...gameContext.teams].sort((a, b) => b.score - a.score);
-  const winner = gameContext.winnerTeamId
-    ? gameContext.teams.find((item) => item.id === gameContext.winnerTeamId) ?? null
-    : rankedTeams[0] ?? null;
+const MEDALS = ['🥇', '🥈', '🥉'];
+
+export function GameOver({ game, onPlayAgain, onBackToLobby }: GameOverProps) {
+  const { t, n } = useI18n();
+
+  const ranked = useMemo(() => {
+    return [...game.teams].sort((a, b) => {
+      if (game.mode === 'RELAY') {
+        if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
+        if (b.remainingTime !== a.remainingTime) return b.remainingTime - a.remainingTime;
+      }
+      if (b.score !== a.score) return b.score - a.score;
+      return b.correct - a.correct;
+    });
+  }, [game.mode, game.teams]);
+
+  const winners = game.teams.filter((team) => game.winnerTeamIds.includes(team.id));
 
   useEffect(() => {
-    // Big confetti celebration on game over
-    const duration = 2000;
-    const end = Date.now() + duration;
-    const frame = () => {
+    playFanfare();
+    const end = Date.now() + 2200;
+    let frame = 0;
+    const shoot = () => {
       confetti({
-        particleCount: 3,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        colors: ['#f97316', '#14b8a6', '#22c55e'],
+        particleCount: 4,
+        angle: 62,
+        spread: 60,
+        origin: { x: 0, y: 0.72 },
+        colors: ['#fb923c', '#2dd4bf', '#34d399'],
+        disableForReducedMotion: true,
       });
       confetti({
-        particleCount: 3,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ['#f97316', '#14b8a6', '#f59e0b'],
+        particleCount: 4,
+        angle: 118,
+        spread: 60,
+        origin: { x: 1, y: 0.72 },
+        colors: ['#a78bfa', '#fbbf24', '#f472b6'],
+        disableForReducedMotion: true,
       });
-      if (Date.now() < end) requestAnimationFrame(frame);
+      if (Date.now() < end) frame = requestAnimationFrame(shoot);
     };
-    frame();
+    shoot();
+    return () => cancelAnimationFrame(frame);
   }, []);
 
+  const winnerLabel = winners.length === 1
+    ? t('over.winner', { team: winners[0].name })
+    : t('over.tie');
+
   return (
-    <div className="gameover-container">
-      <div className="gameover-card">
-        <h1 className="gameover-title">🎉 Game Over!</h1>
+    <div className="screen gameover" style={teamColorVar(winners[0]?.colorIndex ?? 0)}>
+      <div className="over-head">
+        <span className="over-trophy" aria-hidden="true">🏆</span>
+        <p className="over-kicker">{t('over.title')}</p>
+        <h2 className="over-winner">{winnerLabel}</h2>
+      </div>
 
-        {!isSinglePhoneMode && team && (
-          <div className="final-score">
-            <p className="score-value">{team.score} {team.score === 1 ? 'point' : 'points'}</p>
-            {team.bestStreak !== undefined && team.bestStreak > 0 && (
-              <p className="best-streak">Best streak: {team.bestStreak} 🔥</p>
-            )}
+      <div className="screen-scroll">
+        <section className="card">
+          <div className="card-title">{t('over.standings')}</div>
+          <div className="over-list">
+            {ranked.map((team, index) => (
+              <div
+                className={`over-row ${index === 0 ? 'leader' : ''} ${team.eliminated ? 'out' : ''}`}
+                key={team.id}
+                style={teamColorVar(team.colorIndex)}
+              >
+                <span className="over-rank">{MEDALS[index] ?? n(index + 1)}</span>
+                <span className="over-team">
+                  <span className="over-team-name">{team.name}</span>
+                  <span className="over-team-meta">
+                    ✅ {n(team.correct)} · ↺ {n(team.skipped)} · ⚠️ {n(team.fouls)}
+                    {team.bestStreak > 1 ? ` · 🔥 ${n(team.bestStreak)}` : ''}
+                  </span>
+                </span>
+                <span className="over-score">
+                  <strong className="tabular">{n(team.score)}</strong>
+                  <span>
+                    {game.mode === 'RELAY'
+                      ? `${formatClock(team.remainingTime, n)} ${t('over.timeLeft')}`
+                      : t('over.points')}
+                  </span>
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </section>
 
-        {isSinglePhoneMode && (
-          <div className="final-score">
-            {winner && (
-              <p className="score-value">
-                Winner: {winner.name} ({winner.score} {winner.score === 1 ? 'point' : 'points'})
-              </p>
-            )}
-            <div className="scoreboard-list">
-              {rankedTeams.map((player, index) => (
-                <div className="scoreboard-item" key={player.id}>
-                  <span className="rank">{index + 1}. {player.name}</span>
-                  <span className="score">{player.score} {player.score === 1 ? 'pt' : 'pts'}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <p className="over-punishment">{t('over.punishment')}</p>
+      </div>
 
-        <button className="restart-button" onClick={onRestartGame}>
-          Play Again
+      <div className="over-actions">
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={onPlayAgain}>
+          {t('over.again')}
+        </button>
+        <button type="button" className="btn btn-ghost btn-block" onClick={onBackToLobby}>
+          {t('over.lobby')}
         </button>
       </div>
     </div>

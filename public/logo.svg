@@ -1,20 +1,19 @@
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea" />
-      <stop offset="100%" style="stop-color:#764ba2" />
+    <linearGradient id="warm" x1="10%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stop-color="#fdba74" />
+      <stop offset="100%" stop-color="#f97316" />
+    </linearGradient>
+    <linearGradient id="cool" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2dd4bf" />
+      <stop offset="100%" stop-color="#a78bfa" />
     </linearGradient>
   </defs>
-  
-  <!-- Background circle -->
-  <circle cx="50" cy="50" r="48" fill="url(#logoGradient)" opacity="0.1" />
-  
-  <!-- Outer ring -->
-  <circle cx="50" cy="50" r="42" fill="none" stroke="url(#logoGradient)" stroke-width="2" />
-  
-  <!-- Question mark design -->
-  <path d="M 50 25 Q 60 25 65 32 Q 68 37 65 42 Q 62 45 58 43" fill="none" stroke="url(#logoGradient)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-  
-  <!-- Question mark dot -->
-  <circle cx="50" cy="58" r="2.5" fill="url(#logoGradient)" />
+  <circle cx="50" cy="50" r="46" fill="url(#warm)" opacity="0.12" />
+  <path d="M78 38a32 32 0 1 1-13-14" stroke="url(#warm)" stroke-width="9" stroke-linecap="round" fill="none" />
+  <path d="M62 12l18 8-9 17z" fill="url(#warm)" />
+  <circle cx="50" cy="50" r="17" fill="url(#cool)" opacity="0.22" />
+  <circle cx="40" cy="50" r="4.4" fill="url(#cool)" />
+  <circle cx="50" cy="50" r="4.4" fill="url(#cool)" />
+  <circle cx="60" cy="50" r="4.4" fill="url(#cool)" />
 </svg>

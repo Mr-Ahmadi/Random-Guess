@@ -1,0 +1,79 @@
+.rules-section {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--stroke);
+  border-inline-start: 3px solid var(--accent);
+}
+
+.rules-section.forbidden {
+  border-inline-start-color: var(--danger);
+  background: rgba(251, 113, 133, 0.07);
+}
+
+.rules-section.penalty {
+  border-inline-start-color: var(--warn);
+  background: rgba(251, 191, 36, 0.07);
+}
+
+.rules-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.rules-section ul {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rules-section li {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.rules-section li::marker {
+  color: var(--accent);
+}
+
+.rules-specs {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rules-specs div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px dashed var(--stroke);
+}
+
+.rules-specs div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.rules-specs dt {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.rules-specs dd {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: end;
+}

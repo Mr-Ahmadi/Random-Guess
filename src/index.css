@@ -1,50 +1,115 @@
-:root {
-  --bg: #f8fafc;
-  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  --primary: #f97316;
-  --primary-dark: #ea580c;
-  --primary-glow: rgba(249, 115, 22, 0.4);
-  --secondary: #14b8a6;
-  --secondary-dark: #0f766e;
-  --secondary-glow: rgba(20, 184, 166, 0.3);
-  --ink: #0f172a;
-  --ink-soft: #64748b;
-  --surface: rgba(255, 255, 255, 0.85);
-  --surface-border: rgba(255, 255, 255, 0.5);
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --success: #10b981;
-  --danger: #ef4444;
-  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -4px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 16px 32px -8px rgba(0, 0, 0, 0.1), 0 8px 16px -8px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 32px 64px -12px rgba(0, 0, 0, 0.12), 0 16px 32px -12px rgba(0, 0, 0, 0.06);
-  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-  --team-color-1: #f97316;
-  --team-color-2: #0ea5e9;
-  --team-color-3: #22c55e;
-  --team-color-4: #a855f7;
-  --team-color-5: #eab308;
-  --team-color-6: #ef4444;
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&family=Vazirmatn:wght@400;500;600;700;800&display=swap');
 
-  font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+:root {
+  /* Surfaces */
+  --bg-0: #070b18;
+  --bg-1: #0d1428;
+  --bg-2: #141c36;
+  --surface: rgba(255, 255, 255, 0.055);
+  --surface-strong: rgba(255, 255, 255, 0.1);
+  --surface-solid: #161f3a;
+  --stroke: rgba(255, 255, 255, 0.1);
+  --stroke-strong: rgba(255, 255, 255, 0.2);
+
+  /* Ink */
+  --ink: #f6f8ff;
+  --ink-soft: #9fadc9;
+  --ink-dim: #6c7a99;
+
+  /* Accents */
+  --accent: #fb923c;
+  --accent-deep: #f97316;
+  --accent-soft: rgba(251, 146, 60, 0.16);
+  --mint: #2dd4bf;
+  --mint-deep: #14b8a6;
+  --violet: #a78bfa;
+  --success: #34d399;
+  --success-deep: #10b981;
+  --danger: #fb7185;
+  --danger-deep: #f43f5e;
+  --warn: #fbbf24;
+
+  /* Team palette - teammates share a colour */
+  --team-1: #fb923c;
+  --team-2: #38bdf8;
+  --team-3: #34d399;
+  --team-4: #c084fc;
+  --team-5: #fbbf24;
+  --team-6: #fb7185;
+  --team-7: #2dd4bf;
+  --team-8: #f472b6;
+
+  /* Shape + motion */
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-xl: 34px;
+  --shadow-sm: 0 4px 14px rgba(3, 6, 18, 0.35);
+  --shadow-md: 0 18px 40px -18px rgba(3, 6, 18, 0.85);
+  --shadow-lg: 0 32px 70px -26px rgba(3, 6, 18, 0.95);
+  --ring: rgba(251, 146, 60, 0.45);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --font-ui: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Sora', 'Space Grotesk', system-ui, sans-serif;
+
+  color-scheme: dark;
+  font-family: var(--font-ui);
   line-height: 1.5;
-  font-weight: 400;
-  background-color: var(--bg);
-  background-image: var(--bg-gradient);
-  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body {
-  margin: 0;
-  display: block;
-  min-width: 320px;
-  min-height: 100vh;
-  overflow: hidden;
+html[data-lang='fa'] {
+  --font-ui: 'Vazirmatn', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Vazirmatn', 'Sora', system-ui, sans-serif;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  background-color: var(--bg-0);
+  background-image:
+    radial-gradient(90vw 60vh at 12% -8%, rgba(251, 146, 60, 0.22), transparent 60%),
+    radial-gradient(80vw 55vh at 92% 4%, rgba(45, 212, 191, 0.18), transparent 62%),
+    radial-gradient(70vw 60vh at 50% 110%, rgba(167, 139, 250, 0.2), transparent 62%),
+    linear-gradient(170deg, var(--bg-1) 0%, var(--bg-0) 55%, var(--bg-2) 100%);
+  background-attachment: fixed;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 a {
@@ -52,6 +117,22 @@ a {
   text-decoration: none;
 }
 
-a:hover {
-  color: var(--primary-dark);
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 99px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

@@ -1,6 +1,23 @@
-export type GameState = 'LOBBY' | 'IN_GAME' | 'GAME_OVER';
-export type GameMode = 'MULTI_PHONE' | 'SINGLE_PHONE';
-export type PauseReason = 'NEXT_WORD' | 'PASS_PHONE' | null;
+import type { Language } from '../i18n/strings';
+
+/** Screens the game can be on. */
+export type Phase =
+  | 'LOBBY'
+  | 'TURN_INTRO'
+  | 'PLAYING'
+  | 'TURN_SUMMARY'
+  | 'GAME_OVER';
+
+/**
+ * ROUNDS - the classic game: a fixed number of timed rounds, every team plays
+ * one turn per round and the highest score wins.
+ * RELAY  - every team owns a bank of time, the phone travels after each word
+ * and a team is out once its bank empties. The team that spent the least time
+ * is left standing.
+ * SPRINT - one word per turn on a short clock: land it and the phone moves to
+ * the next team straight away. Played over rounds, most points wins.
+ */
+export type GameMode = 'ROUNDS' | 'RELAY' | 'SPRINT';
 
 export interface Player {
   id: string;
@@ -11,39 +28,83 @@ export interface Player {
 export interface Team {
   id: string;
   name: string;
+  /** Index into the team colour palette - teammates share it. */
+  colorIndex: number;
+  playerIds: string[];
   score: number;
-  streak?: number;
-  bestStreak?: number;
-  remainingTime?: number;
-  eliminated?: boolean;
-  memberIds?: string[];
+  correct: number;
+  skipped: number;
+  fouls: number;
+  streak: number;
+  bestStreak: number;
+  /** Seconds the team has spent playing so far. */
+  timeUsed: number;
+  /** RELAY only: seconds left in the bank. */
+  remainingTime: number;
+  eliminated: boolean;
+  /** How many turns this team has taken - decides who describes. */
+  turnsTaken: number;
+}
+
+export interface TurnStats {
+  teamId: string;
+  correct: number;
+  skipped: number;
+  fouls: number;
+  points: number;
+  bestStreak: number;
+  /** Set when the turn ended because a RELAY team burned through its bank. */
+  eliminated: boolean;
 }
 
 export interface GameContext {
-  state: GameState;
+  phase: Phase;
   mode: GameMode;
-  requireReadyAfterPass: boolean;
+  wordLanguage: Language;
   teams: Team[];
-  currentTeamIndex: number;
   players: Player[];
-  currentPlayerIndex: number;
-  turnResetKey: number;
-  timerDuration: number;
+  activeTeamIndex: number;
+  roundCount: number;
+  currentRound: number;
+  /** Seconds granted per turn (ROUNDS), per team bank (RELAY) or per word (SPRINT). */
+  turnDuration: number;
+  requireReadyAfterPass: boolean;
   currentWord: string | null;
-  usedWords: Set<string>;
-  allWords: string[];
-  isPaused: boolean;
-  pauseReason: PauseReason;
-  winnerTeamId: string | null;
+  usedWords: string[];
+  wordPool: string[];
+  /** Bumped every turn so the timer remounts with a fresh duration. */
+  turnKey: number;
+  lastTurn: TurnStats | null;
+  winnerTeamIds: string[];
 }
 
-export interface GameAction {
-  type: 'INITIALIZE_GAME' | 'NEXT_WORD' | 'SKIP_WORD' | 'TIMER_ENDED' | 'PAUSE_GAME' | 'RESUME_GAME' | 'RESTART_GAME';
-  payload?: unknown;
+export interface TeamDraft {
+  id: string;
+  playerNames: [string, string];
 }
+
+export interface StartGamePayload {
+  mode: GameMode;
+  wordLanguage: Language;
+  teamDrafts: TeamDraft[];
+  roundCount: number;
+  turnDuration: number;
+  requireReadyAfterPass: boolean;
+  wordPool: string[];
+}
+
+export type GameAction =
+  | { type: 'START_GAME'; payload: StartGamePayload }
+  | { type: 'BEGIN_TURN' }
+  | { type: 'CORRECT'; payload: { timeRemaining: number } }
+  | { type: 'SKIP'; payload: { timeRemaining: number } }
+  | { type: 'FOUL'; payload: { timeRemaining: number } }
+  | { type: 'TURN_ENDED'; payload: { timeRemaining: number } }
+  | { type: 'ADVANCE' }
+  | { type: 'RESET' };
 
 export interface WordDataset {
-  categories: {
-    [key: string]: string[];
-  };
+  language?: Language;
+  direction?: 'ltr' | 'rtl';
+  categories: Record<string, string[]>;
 }

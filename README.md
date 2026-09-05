@@ -1,134 +1,101 @@
-# Word Guess
+# Dowr · دور
 
-A fast-paced word guessing game built with React, TypeScript, and Vite.
+A bilingual (English / Persian) party word game for the web. One team member
+describes the word on screen, their partner shouts it out, and the phone keeps
+travelling around the circle. Installable as a PWA, works offline, no backend.
+
+> **دور** یک بازی دورهمی سریع و خنده‌دار است: یک نفر کلمه را توضیح می‌دهد،
+> هم‌تیمی‌اش حدس می‌زند و گوشی دور می‌چرخد.
 
 ## Highlights
 
-- Two game modes:
-  - `MULTI_PHONE`: classic single-team play flow
-  - `SINGLE_PHONE`: one device is passed between players
-- Per-team countdown timers
-- Optional pass-phone pause screen between turns in single-phone mode
-- Team pairing preview modal in lobby
-- Team clocks panel in game (scrollable for many teams)
-- Word dataset loaded from `public/words.en.json`
-- No backend required (all state is local)
+- **Full English / Persian interface** with a live language switch, RTL layout,
+  Vazirmatn typography and Persian digits everywhere.
+- **Two Persian and English word sets** (~530 words each) split into 12 packs
+  you can mix per game.
+- **Two game modes**
+  - *Classic rounds* — a fixed number of timed rounds, every team plays one turn
+    per round, highest score wins.
+  - *Time relay* — every team owns a bank of time, the phone passes after each
+    correct guess, and a team is out when its bank empties. The team that spent
+    the least time is left standing.
+- **Rules baked in**: changing the word costs a point, calling a foul replaces
+  the word and takes 3 points off, exactly like the table rules.
+- Team colours, hand-off screens, per-turn scorecards, streaks, confetti,
+  synthesised sound effects, haptics and desktop keyboard shortcuts.
 
-## Game Rules
+## How to play
 
-### Multi-phone mode
+Players pair up two by two and sit facing each other; teammates share a colour
+on screen. On your turn a word appears — describe it until your partner says it
+out loud, tap **Correct**, and pass the phone on.
 
-1. Start the game with the selected team timer.
-2. Tap `Got It` for a correct guess (adds score, keeps turn flow).
-3. Tap `Skip` to move on without scoring.
-4. When the active timer reaches zero, game ends.
+Not allowed: any part of the word or a rhyme, pointing at things around you,
+switching language. Break a rule and the other players tap **Foul −3**: the word
+is replaced and the team loses three points. Changing the word yourself costs
+one point. Losing team owes everyone a dare.
 
-### Single-phone mode
+The in-app **How to play** screen carries the same rules in both languages.
 
-1. Enter an even number of players (minimum 4).
-2. Players are paired into teams: first half + second half.
-3. Each team has its own timer pool and can be eliminated when timer hits zero.
-4. The game continues until one team remains (winner).
-5. You can enable `Show pass-phone pause screen` to require a `Ready` tap between turns.
-
-## Lobby Setup
-
-- Select mode: `Multi-phone` or `Single-phone`
-- Set team timer: presets (`30s`, `60s`, `90s`) or custom (`10-300`)
-- Single-phone only:
-  - Enter players (one per line)
-  - View generated team pairings
-  - Toggle pass-phone pause behavior (`On` / `Off`)
-
-## Project Structure
-
-```text
-src/
-├── components/
-│   ├── Lobby.tsx
-│   ├── Lobby.css
-│   ├── GameBoard.tsx
-│   ├── GameBoard.css
-│   ├── GameOver.tsx
-│   ├── GameOver.css
-│   └── Logo.tsx
-├── data/
-│   └── wordLoader.ts
-├── hooks/
-│   └── useGameTimer.ts
-├── state/
-│   └── gameReducer.ts
-├── types/
-│   └── index.ts
-├── App.tsx
-├── App.css
-└── main.tsx
-public/
-└── words.en.json
-scripts/
-└── generate-icons.mjs
-```
-
-## Requirements
-
-- Node.js 20+
-- npm
-
-## Run Locally
+## Run locally
 
 ```bash
 npm install
-npm run dev
+npm run dev      # http://localhost:5173/Random-Guess/
 ```
 
-App runs at `http://localhost:5173` by default.
+Requires Node 20.19+ (Vite 7).
 
-## Available Scripts
+## Scripts
 
-- `npm run dev` - start dev server
-- `npm run build` - generate icons + type-check + production build
-- `npm run preview` - preview production build
-- `npm run lint` - run ESLint
-- `npm run deploy` - build and deploy `dist/` with `gh-pages`
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server |
+| `npm run build` | icons + type-check + production build |
+| `npm run preview` | serve the production build |
+| `npm run lint` | ESLint |
+| `npm run deploy` | build and publish `dist/` with `gh-pages` |
 
-## Words Dataset
+## Project layout
 
-Edit `public/words.en.json`:
+```text
+src/
+├── components/     Lobby, TurnIntro, GameBoard, TurnSummary, GameOver, RulesModal, TopBar
+├── i18n/           strings.ts (en + fa dictionaries), LanguageProvider, useI18n
+├── state/          gameReducer.ts - the whole game model
+├── hooks/          useGameTimer.ts - rAF countdown
+├── data/           wordLoader.ts - loads and shuffles the word packs
+├── utils/          sound effects, clock/number formatting, team colours
+└── types/
+public/
+├── words.en.json   English word packs
+└── words.fa.json   Persian word packs
+```
+
+## Game model
+
+`gameReducer` owns everything. Phases: `LOBBY → TURN_INTRO → PLAYING →
+TURN_SUMMARY → … → GAME_OVER`. Each team tracks score, correct/changed/foul
+counts, streaks, time used and (in relay mode) the remaining bank. A turn opens
+by bumping `turnKey`, which remounts the board so the countdown starts fresh.
+
+## Word packs
+
+Both files use the same shape:
 
 ```json
 {
+  "language": "fa",
+  "direction": "rtl",
   "categories": {
-    "general": ["word1", "word2", "word3"]
+    "animals": ["شیر", "ببر"],
+    "food": ["نان", "عسل"]
   }
 }
 ```
 
-Notes:
-
-- Words are selected randomly without repetition until pool is exhausted.
-- When exhausted, selection continues via reshuffle behavior in loader/reducer flow.
-
-## State Model (Core)
-
-Main game context includes:
-
-- `state`: `LOBBY | IN_GAME | GAME_OVER`
-- `mode`: `MULTI_PHONE | SINGLE_PHONE`
-- `teams`, `players`
-- `timerDuration`, per-team `remainingTime`
-- `isPaused`, `pauseReason`
-- `winnerTeamId` (single-phone winner)
-
-See `src/types/index.ts` and `src/state/gameReducer.ts` for full behavior.
-
-## Build for Production
-
-```bash
-npm run build
-npm run preview
-```
-
-Deploy the generated `dist/` to any static host (Vercel, Netlify, GitHub Pages, etc.).
+Add a category and it shows up in the lobby as a selectable pack; add a
+`cat.<key>` entry in `src/i18n/strings.ts` to give it a translated label.
 
 ## License
 

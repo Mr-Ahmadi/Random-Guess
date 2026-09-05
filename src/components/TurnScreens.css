@@ -1,0 +1,229 @@
+.turn-screen {
+  justify-content: space-between;
+  text-align: center;
+}
+
+.turn-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.turn-top-spacer {
+  width: 40px;
+}
+
+.turn-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  overflow-y: auto;
+}
+
+.turn-kicker {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--team-color);
+}
+
+.turn-kicker.subtle {
+  color: var(--ink-dim);
+  font-weight: 500;
+}
+
+.turn-hint {
+  margin: 0;
+}
+
+/* ---------- Hand-off ---------- */
+.handoff {
+  display: flex;
+  align-items: stretch;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.handoff-person {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1rem 0.6rem;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  min-width: 0;
+}
+
+.handoff-person.primary {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--team-color) 26%, transparent), rgba(255, 255, 255, 0.04));
+  border-color: color-mix(in srgb, var(--team-color) 42%, transparent);
+  box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--team-color) 90%, transparent);
+}
+
+.handoff-avatar {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.handoff-person strong {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.handoff-person span:last-child {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  line-height: 1.3;
+}
+
+.handoff-arrow {
+  display: grid;
+  place-items: center;
+  color: var(--team-color);
+  opacity: 0.8;
+  animation: nudge 1.8s var(--ease) infinite;
+}
+
+@keyframes nudge {
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+html[dir='rtl'] .handoff-arrow svg {
+  transform: scaleX(-1);
+}
+
+.ready-btn {
+  flex: none;
+}
+
+/* ---------- Summary ---------- */
+.summary-flash {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  animation: drop-in 0.4s var(--ease) both;
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.92);
+  }
+}
+
+.summary-points {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.summary-points strong {
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--success);
+}
+
+.summary-points.negative strong {
+  color: var(--danger);
+}
+
+.summary-points span {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.3rem;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+}
+
+.summary-stat strong {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.summary-stat span {
+  font-size: 0.68rem;
+  color: var(--ink-dim);
+  text-align: center;
+}
+
+.summary-stat.good strong {
+  color: var(--success);
+}
+
+.summary-stat.bad strong {
+  color: var(--danger);
+}
+
+.summary-standings {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--stroke);
+}
+
+.standing-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.32rem 0.4rem;
+  border-radius: var(--r-sm);
+}
+
+.standing-row.out {
+  opacity: 0.42;
+}
+
+.standing-name {
+  flex: 1;
+  text-align: start;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.standing-value {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--team-color);
+}

@@ -1,95 +1,68 @@
-import { useReducer, useEffect, useState } from 'react';
+import { useReducer, useState } from 'react';
 import { Lobby } from './components/Lobby';
+import { TurnIntro } from './components/TurnIntro';
 import { GameBoard } from './components/GameBoard';
+import { TurnSummary } from './components/TurnSummary';
 import { GameOver } from './components/GameOver';
 import { gameReducer, initialGameState } from './state/gameReducer';
-import { loadWords } from './data/wordLoader';
-import type { GameMode } from './types';
+import { shuffle } from './data/wordLoader';
+import type { StartGamePayload } from './types/index';
 import './App.css';
 
-function App() {
-  const [gameContext, dispatch] = useReducer(gameReducer, initialGameState);
-  const [allWordsLoaded, setAllWordsLoaded] = useState<string[]>([]);
-  const [wordsLoading, setWordsLoading] = useState(true);
+export default function App() {
+  const [game, dispatch] = useReducer(gameReducer, initialGameState);
+  const [lastSetup, setLastSetup] = useState<StartGamePayload | null>(null);
 
-  useEffect(() => {
-    loadWords()
-      .then(setAllWordsLoaded)
-      .catch(console.error)
-      .finally(() => setWordsLoading(false));
-  }, []);
-
-  const handleStartGame = (
-    mode: GameMode,
-    names: string[],
-    timerDuration: number,
-    requireReadyAfterPass: boolean
-  ) => {
-    dispatch({
-      type: 'INITIALIZE_GAME',
-      payload: {
-        mode,
-        teamNames: mode === 'MULTI_PHONE' ? names : undefined,
-        playerNames: mode === 'SINGLE_PHONE' ? names : undefined,
-        timerDuration,
-        requireReadyAfterPass,
-        allWords: allWordsLoaded.length > 0 ? allWordsLoaded : [], // reducer + getRandomWord use fallback when empty
-      },
-    });
+  const startGame = (payload: StartGamePayload) => {
+    setLastSetup(payload);
+    dispatch({ type: 'START_GAME', payload });
   };
 
-  const handleNextWord = (timeRemaining?: number) => {
-    dispatch({ type: 'NEXT_WORD', payload: { timeRemaining } });
-  };
-
-  const handleSkipWord = (timeRemaining?: number) => {
-    dispatch({ type: 'SKIP_WORD', payload: { timeRemaining } });
-  };
-
-  const handlePause = () => {
-    dispatch({ type: 'PAUSE_GAME' });
-  };
-
-  const handleResume = () => {
-    dispatch({ type: 'RESUME_GAME' });
-  };
-
-  const handleTimerEnd = (timeRemaining?: number) => {
-    dispatch({ type: 'TIMER_ENDED', payload: { timeRemaining } });
-  };
-
-  const handleRestartGame = () => {
-    dispatch({ type: 'RESTART_GAME' });
+  const playAgain = () => {
+    if (!lastSetup) {
+      dispatch({ type: 'RESET' });
+      return;
+    }
+    // Same teams and settings, freshly shuffled words.
+    dispatch({ type: 'START_GAME', payload: { ...lastSetup, wordPool: shuffle(lastSetup.wordPool) } });
   };
 
   return (
-    <>
-      <div className="app">
-        {gameContext.state === 'LOBBY' && (
-          <Lobby
-            onStartGame={handleStartGame}
-            wordsLoading={wordsLoading}
-            wordsReady={allWordsLoaded.length > 0}
-          />
-        )}
-        {gameContext.state === 'IN_GAME' && (
-          <GameBoard
-            key={`${gameContext.mode}-${gameContext.turnResetKey}`}
-            gameContext={gameContext}
-            onNextWord={handleNextWord}
-            onSkipWord={handleSkipWord}
-            onReady={handleResume}
-            onPause={handlePause}
-            onExit={handleRestartGame}
-            onTimerEnd={handleTimerEnd}
-          />
-        )}
-        {gameContext.state === 'GAME_OVER' && (
-          <GameOver gameContext={gameContext} onRestartGame={handleRestartGame} />
-        )}
-      </div>
-    </>
+    <div className="app">
+      {game.phase === 'LOBBY' && <Lobby onStartGame={startGame} />}
+
+      {game.phase === 'TURN_INTRO' && (
+        <TurnIntro
+          key={`intro-${game.turnKey}`}
+          game={game}
+          onReady={() => dispatch({ type: 'BEGIN_TURN' })}
+          onQuit={() => dispatch({ type: 'RESET' })}
+        />
+      )}
+
+      {game.phase === 'PLAYING' && (
+        <GameBoard
+          key={`turn-${game.turnKey}`}
+          game={game}
+          onCorrect={(timeRemaining) => dispatch({ type: 'CORRECT', payload: { timeRemaining } })}
+          onSkip={(timeRemaining) => dispatch({ type: 'SKIP', payload: { timeRemaining } })}
+          onFoul={(timeRemaining) => dispatch({ type: 'FOUL', payload: { timeRemaining } })}
+          onTimeUp={() => dispatch({ type: 'TURN_ENDED', payload: { timeRemaining: 0 } })}
+          onQuit={() => dispatch({ type: 'RESET' })}
+        />
+      )}
+
+      {game.phase === 'TURN_SUMMARY' && (
+        <TurnSummary
+          key={`summary-${game.turnKey}`}
+          game={game}
+          onContinue={() => dispatch({ type: 'ADVANCE' })}
+        />
+      )}
+
+      {game.phase === 'GAME_OVER' && (
+        <GameOver game={game} onPlayAgain={playAgain} onBackToLobby={() => dispatch({ type: 'RESET' })} />
+      )}
+    </div>
   );
 }
-
-export default App;
